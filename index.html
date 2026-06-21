@@ -6,16 +6,16 @@
     <title>WOWDROPS | Premium Water Can Delivery</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     
     <style>
-        /* Base Styles & Variables */
+        /* === BASE STYLES === */
         :root {
-            --primary-blue: #0097e6;
-            --dark-blue: #0072b0;
-            --water-light: #e1f5fe;
-            --text-dark: #2f3640;
-            --text-light: #718093;
+            --primary: #0088ff;
+            --primary-hover: #0070d2;
+            --dark: #0f172a;
+            --light: #f8fafc;
+            --gray: #64748b;
             --white: #ffffff;
         }
 
@@ -23,222 +23,290 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent; /* Removes blue tap highlight on mobile */
         }
 
         body {
-            color: var(--text-dark);
-            background-color: var(--water-light);
-            line-height: 1.6;
+            background-color: var(--light);
+            color: var(--dark);
+            overflow-x: hidden;
         }
 
-        /* Navigation Bar */
+        /* === HEADER & NAVIGATION === */
         header {
-            background-color: var(--white);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             position: fixed;
-            width: 100%;
             top: 0;
-            z-index: 1000;
+            left: 0;
+            width: 100%;
+            /* "Glassmorphism" effect for premium feel */
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            z-index: 9999;
+            transition: all 0.3s ease;
         }
 
         .nav-container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 15px 20px;
+            padding: 15px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .logo {
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .logo img {
+            height: 45px;
+            width: auto;
+            display: block;
         }
 
-        .nav-menu {
+        /* Nav Links Desktop */
+        .nav-links {
             display: flex;
-            gap: 15px;
+            gap: 16px;
             list-style: none;
+            align-items: center;
         }
 
-        .nav-link {
+        .nav-btn {
             text-decoration: none;
             font-weight: 600;
             font-size: 15px;
             padding: 10px 20px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            text-align: center;
+            border-radius: 50px;
+            transition: all 0.2s ease;
         }
 
-        /* Portal Button Styles */
         .btn-customer {
-            background-color: var(--primary-blue);
+            background-color: var(--primary);
             color: var(--white);
-            box-shadow: 0 4px 10px rgba(0, 151, 230, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 136, 255, 0.25);
         }
 
         .btn-customer:hover {
-            background-color: var(--dark-blue);
+            background-color: var(--primary-hover);
             transform: translateY(-2px);
         }
 
         .btn-delivery {
-            border: 2px solid var(--primary-blue);
-            color: var(--primary-blue);
+            color: var(--dark);
+            background: rgba(0, 136, 255, 0.1);
         }
 
         .btn-delivery:hover {
-            background-color: var(--water-light);
+            background: rgba(0, 136, 255, 0.2);
         }
 
         .btn-admin {
-            color: var(--text-light);
+            color: var(--gray);
+            background: transparent;
         }
 
         .btn-admin:hover {
-            color: var(--text-dark);
+            color: var(--dark);
         }
 
-        /* Hero Section */
+        /* Hamburger Menu Icon (Hidden on Desktop) */
+        .hamburger {
+            display: none;
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 5px;
+        }
+
+        .hamburger .bar {
+            display: block;
+            width: 25px;
+            height: 3px;
+            margin: 5px auto;
+            background-color: var(--dark);
+            border-radius: 3px;
+            transition: all 0.3s ease-in-out;
+        }
+
+        /* === HERO SECTION === */
         .hero {
-            margin-top: 70px;
-            height: 90vh;
+            margin-top: 76px; /* Offset for fixed header */
+            min-height: 85vh;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
-            background: linear-gradient(rgba(0, 34, 62, 0.6), rgba(0, 34, 62, 0.6)), 
-                        url('https://images.unsplash.com/photo-1548839130-3bf604e4ffba?auto=format&fit=crop&q=80&w=1920') no-repeat center center/cover;
+            padding: 40px 20px;
+            background: linear-gradient(to bottom, rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.4)), 
+                        url('https://images.unsplash.com/photo-1548839130-3bf604e4ffba?auto=format&fit=crop&q=80&w=1920') center/cover;
             color: var(--white);
-            padding: 0 20px;
         }
 
         .hero-content {
-            max-width: 800px;
+            max-width: 700px;
+            animation: fadeIn 1s ease-out;
         }
 
-        .hero-content h1 {
+        .hero-title {
             font-size: 3.5rem;
-            margin-bottom: 20px;
-            line-height: 1.2;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            letter-spacing: -1px;
         }
 
-        .hero-content p {
-            font-size: 1.2rem;
-            margin-bottom: 30px;
-            color: #dcdde1;
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: #e2e8f0;
+            margin-bottom: 40px;
+            line-height: 1.6;
         }
 
         .hero-cta {
             display: inline-block;
             background-color: var(--white);
-            color: var(--primary-blue);
-            padding: 15px 40px;
-            font-size: 1.2rem;
+            color: var(--primary);
             font-weight: 800;
-            text-decoration: none;
+            font-size: 1.1rem;
+            padding: 16px 40px;
             border-radius: 50px;
-            transition: transform 0.3s, box-shadow 0.3s;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         }
 
         .hero-cta:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            transform: translateY(-4px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
         }
 
-        /* Features Section */
+        /* === FEATURES SECTION === */
         .features {
             max-width: 1200px;
-            margin: 80px auto;
-            padding: 0 20px;
+            margin: 100px auto;
+            padding: 0 24px;
+        }
+
+        .section-title {
             text-align: center;
-        }
-
-        .features h2 {
             font-size: 2.5rem;
-            color: var(--text-dark);
-            margin-bottom: 50px;
+            font-weight: 800;
+            margin-bottom: 60px;
+            color: var(--dark);
         }
 
-        .feature-grid {
+        .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
+            gap: 32px;
         }
 
-        .feature-card {
-            background-color: var(--white);
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            transition: transform 0.3s ease;
+        .card {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.02);
         }
 
-        .feature-card:hover {
-            transform: translateY(-10px);
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.06);
         }
 
-        .feature-card img {
-            width: 100%;
-            height: 220px;
-            object-fit: cover;
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            display: inline-block;
+            padding: 16px;
+            background: var(--light);
+            border-radius: 16px;
         }
 
-        .feature-info {
-            padding: 25px;
-        }
-
-        .feature-info h3 {
+        .card h3 {
             font-size: 1.5rem;
-            color: var(--primary-blue);
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
-        /* Footer */
+        .card p {
+            color: var(--gray);
+            line-height: 1.6;
+        }
+
+        /* === FOOTER === */
         footer {
-            background-color: var(--text-dark);
-            color: var(--white);
+            background: var(--dark);
+            color: var(--gray);
             text-align: center;
-            padding: 30px 20px;
-            margin-top: 50px;
+            padding: 40px 20px;
+            font-size: 0.9rem;
+        }
+
+        /* === ANIMATIONS === */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         /* =========================================
-           MOBILE RESPONSIVE FIXES 
+           MOBILE & TABLET RESPONSIVE FIXES 
            ========================================= */
-        @media (max-width: 768px) {
-            header {
-                position: relative; /* This stops the menu from floating over the text */
+        @media (max-width: 850px) {
+            .hamburger {
+                display: block; /* Show menu icon */
+                z-index: 10001;
             }
+
+            .nav-links {
+                position: fixed;
+                top: -100%; /* Hide menu above screen */
+                left: 0;
+                width: 100%;
+                flex-direction: column;
+                background-color: var(--white);
+                padding: 100px 24px 40px 24px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); /* Smooth slide */
+                border-bottom-left-radius: 20px;
+                border-bottom-right-radius: 20px;
+                z-index: 10000;
+            }
+
+            .nav-links.active {
+                top: 0; /* Slide down */
+            }
+
+            .nav-links li {
+                width: 100%;
+                text-align: center;
+                margin-bottom: 15px;
+            }
+
+            .nav-btn {
+                display: block;
+                width: 100%;
+                padding: 16px;
+                font-size: 1.1rem;
+            }
+
+            /* Hamburger Animation to 'X' */
+            .hamburger.active .bar:nth-child(1) {
+                transform: translateY(8px) rotate(45deg);
+            }
+            .hamburger.active .bar:nth-child(2) {
+                opacity: 0;
+            }
+            .hamburger.active .bar:nth-child(3) {
+                transform: translateY(-8px) rotate(-45deg);
+            }
+
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
             .hero {
-                margin-top: 0; /* Resets the spacing so it sits right under the menu */
-                height: auto;
                 min-height: 70vh;
-                padding: 50px 20px;
-            }
-            .nav-container {
-                flex-direction: column;
-                gap: 15px;
-                padding: 20px;
-            }
-            .nav-menu {
-                flex-direction: column;
-                width: 100%;
-                gap: 10px; /* Adds space between the stacked buttons */
-            }
-            .nav-link {
-                display: block; /* Makes the buttons stretch the full width of the phone screen */
-                width: 100%;
-            }
-            .hero-content h1 {
-                font-size: 2.2rem; /* Shrinks the main title slightly for mobile */
-            }
-            .features h2 {
-                font-size: 2rem;
             }
         }
     </style>
@@ -248,59 +316,75 @@
     <header>
         <div class="nav-container">
             <a href="#" class="logo">
-                <img src="https://lh3.googleusercontent.com/d/14BAw0p7X-FFaDpmyL81WqKgxWGLoYrZy" style="height: 45px; width: auto;" alt="WOWDROPS Logo">
+                <img src="https://lh3.googleusercontent.com/d/14BAw0p7X-FFaDpmyL81WqKgxWGLoYrZy" alt="WOWDROPS Logo">
             </a>
             
-            <ul class="nav-menu">
-                <li><a href="https://script.google.com/macros/s/AKfycbzhY0E8LaGEaGol7lqOjPdvss-cHeIhvejr6yB9D5EvUevSC4haUVbOFlwtgBht819ntg/exec" class="nav-link btn-customer">Customer Portal</a></li>
-                <li><a href="https://script.google.com/macros/s/AKfycbzhY0E8LaGEaGol7lqOjPdvss-cHeIhvejr6yB9D5EvUevSC4haUVbOFlwtgBht819ntg/exec?page=delivery" class="nav-link btn-delivery">Delivery Portal</a></li>
-                <li><a href="https://script.google.com/macros/s/AKfycbzhY0E8LaGEaGol7lqOjPdvss-cHeIhvejr6yB9D5EvUevSC4haUVbOFlwtgBht819ntg/exec?page=admin" class="nav-link btn-admin">Admin Portal</a></li>
+            <button class="hamburger" id="hamburger-btn">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </button>
+
+            <ul class="nav-links" id="nav-menu">
+                <li><a href="https://script.google.com/macros/s/AKfycbzhY0E8LaGEaGol7lqOjPdvss-cHeIhvejr6yB9D5EvUevSC4haUVbOFlwtgBht819ntg/exec" class="nav-btn btn-customer">Customer Portal</a></li>
+                <li><a href="https://script.google.com/macros/s/AKfycbzhY0E8LaGEaGol7lqOjPdvss-cHeIhvejr6yB9D5EvUevSC4haUVbOFlwtgBht819ntg/exec?page=delivery" class="nav-btn btn-delivery">Delivery Portal</a></li>
+                <li><a href="https://script.google.com/macros/s/AKfycbzhY0E8LaGEaGol7lqOjPdvss-cHeIhvejr6yB9D5EvUevSC4haUVbOFlwtgBht819ntg/exec?page=admin" class="nav-btn btn-admin">Admin Portal</a></li>
             </ul>
         </div>
     </header>
 
     <section class="hero">
         <div class="hero-content">
-            <h1>Refreshing Water, Delivered Right to Your Door.</h1>
-            <p>Experience the convenience of pure, mineral-rich water cans delivered securely and on time through our seamless digital portal.</p>
+            <h1 class="hero-title">Refreshing Water, Delivered Right to Your Door.</h1>
+            <p class="hero-subtitle">Experience the convenience of pure, mineral-rich water cans delivered securely and on time through our seamless digital portal.</p>
             <a href="https://script.google.com/macros/s/AKfycbzhY0E8LaGEaGol7lqOjPdvss-cHeIhvejr6yB9D5EvUevSC4haUVbOFlwtgBht819ntg/exec" class="hero-cta">Order Water Now</a>
         </div>
     </section>
 
     <section class="features">
-        <h2>Why Choose WOWDROPS?</h2>
-        <div class="feature-grid">
+        <h2 class="section-title">Why Choose WOWDROPS?</h2>
+        <div class="grid">
             
-            <div class="feature-card">
-                <img src="https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&q=80&w=600" alt="Crystal Clear Water">
-                <div class="feature-info">
-                    <h3>100% Pure & Safe</h3>
-                    <p>Every drop goes through advanced purification and filtration processes to ensure you're drinking the absolute best.</p>
-                </div>
+            <div class="card">
+                <div class="card-icon">💧</div>
+                <h3>100% Pure & Safe</h3>
+                <p>Every drop goes through advanced purification and filtration processes to ensure you're drinking the absolute best quality water.</p>
             </div>
 
-            <div class="feature-card">
-                <img src="https://images.unsplash.com/photo-1608889175123-8ee362201f81?auto=format&fit=crop&q=80&w=600" alt="Fast Delivery">
-                <div class="feature-info">
-                    <h3>Lightning Fast Delivery</h3>
-                    <p>Track and manage your orders online. Our dedicated fleet ensures your water cans arrive promptly when you need them.</p>
-                </div>
+            <div class="card">
+                <div class="card-icon">🚚</div>
+                <h3>Lightning Fast Delivery</h3>
+                <p>Track and manage your orders online. Our dedicated fleet ensures your water cans arrive promptly exactly when you need them.</p>
             </div>
 
-            <div class="feature-card">
-                <img src="https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=600" alt="Eco Friendly Process">
-                <div class="feature-info">
-                    <h3>Eco-Friendly Cans</h3>
-                    <p>Our premium, food-grade cans are sanitized using medical-grade technology before every refill, protecting you and the environment.</p>
-                </div>
+            <div class="card">
+                <div class="card-icon">♻️</div>
+                <h3>Eco-Friendly Process</h3>
+                <p>Our premium, food-grade cans are sanitized using medical-grade technology before every refill, protecting you and the environment.</p>
             </div>
 
         </div>
     </section>
 
     <footer>
-        <p>&copy; 2026 WOWDROPS. All rights reserved. Ordering powered by Google Apps Script.</p>
+        <p>© 2026 WOWDROPS. All rights reserved. Ordering powered by Google Apps Script.</p>
     </footer>
 
+    <script>
+        const hamburger = document.getElementById('hamburger-btn');
+        const navMenu = document.getElementById('nav-menu');
+
+        // When the hamburger icon is clicked
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            navMenu.classList.toggle('active');
+        });
+
+        // Close the menu if a user clicks a link (helpful on mobile)
+        document.querySelectorAll('.nav-btn').forEach(n => n.addEventListener('click', () => {
+            hamburger.classList.remove('active');
+            navMenu.classList.remove('active');
+        }));
+    </script>
 </body>
 </html>
