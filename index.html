@@ -52,17 +52,10 @@
         }
 
         .logo {
-            font-size: 28px;
-            font-weight: 800;
-            color: var(--primary-blue);
             text-decoration: none;
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-
-        .logo span {
-            color: var(--text-dark);
         }
 
         .nav-menu {
@@ -78,6 +71,7 @@
             padding: 10px 20px;
             border-radius: 8px;
             transition: all 0.3s ease;
+            text-align: center;
         }
 
         /* Portal Button Styles */
@@ -213,19 +207,38 @@
             margin-top: 50px;
         }
 
-        /* Responsive adjustments */
+        /* =========================================
+           MOBILE RESPONSIVE FIXES 
+           ========================================= */
         @media (max-width: 768px) {
+            header {
+                position: relative; /* This stops the menu from floating over the text */
+            }
+            .hero {
+                margin-top: 0; /* Resets the spacing so it sits right under the menu */
+                height: auto;
+                min-height: 70vh;
+                padding: 50px 20px;
+            }
             .nav-container {
                 flex-direction: column;
                 gap: 15px;
+                padding: 20px;
             }
             .nav-menu {
                 flex-direction: column;
                 width: 100%;
-                text-align: center;
+                gap: 10px; /* Adds space between the stacked buttons */
+            }
+            .nav-link {
+                display: block; /* Makes the buttons stretch the full width of the phone screen */
+                width: 100%;
             }
             .hero-content h1 {
-                font-size: 2.5rem;
+                font-size: 2.2rem; /* Shrinks the main title slightly for mobile */
+            }
+            .features h2 {
+                font-size: 2rem;
             }
         }
     </style>
@@ -235,8 +248,9 @@
     <header>
         <div class="nav-container">
             <a href="#" class="logo">
-    <img src="https://lh3.googleusercontent.com/d/14BAw0p7X-FFaDpmyL81WqKgxWGLoYrZy" style="height: 45px; width: auto;" alt="WOWDROPS Logo">
-</a>
+                <img src="https://lh3.googleusercontent.com/d/14BAw0p7X-FFaDpmyL81WqKgxWGLoYrZy" style="height: 45px; width: auto;" alt="WOWDROPS Logo">
+            </a>
+            
             <ul class="nav-menu">
                 <li><a href="https://script.google.com/macros/s/AKfycbzhY0E8LaGEaGol7lqOjPdvss-cHeIhvejr6yB9D5EvUevSC4haUVbOFlwtgBht819ntg/exec" class="nav-link btn-customer">Customer Portal</a></li>
                 <li><a href="https://script.google.com/macros/s/AKfycbzhY0E8LaGEaGol7lqOjPdvss-cHeIhvejr6yB9D5EvUevSC4haUVbOFlwtgBht819ntg/exec?page=delivery" class="nav-link btn-delivery">Delivery Portal</a></li>
