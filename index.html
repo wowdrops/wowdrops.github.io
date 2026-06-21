@@ -1,14 +1,290 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Getting...</title>
-  <script>
-    window.location.replace("https://script.google.com/macros/s/AKfycbzhY0E8LaGEaGol7lqOjPdvss-cHeIhvejr6yB9D5EvUevSC4haUVbOFlwtgBht819ntg/exec");
-  </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOWDROPS | Premium Water Can Delivery</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Base Styles & Variables */
+        :root {
+            --primary-blue: #0097e6;
+            --dark-blue: #0072b0;
+            --water-light: #e1f5fe;
+            --text-dark: #2f3640;
+            --text-light: #718093;
+            --white: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            color: var(--text-dark);
+            background-color: var(--water-light);
+            line-height: 1.6;
+        }
+
+        /* Navigation Bar */
+        header {
+            background-color: var(--white);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--primary-blue);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo span {
+            color: var(--text-dark);
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 15px;
+            list-style: none;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        /* Portal Button Styles */
+        .btn-customer {
+            background-color: var(--primary-blue);
+            color: var(--white);
+            box-shadow: 0 4px 10px rgba(0, 151, 230, 0.3);
+        }
+
+        .btn-customer:hover {
+            background-color: var(--dark-blue);
+            transform: translateY(-2px);
+        }
+
+        .btn-delivery {
+            border: 2px solid var(--primary-blue);
+            color: var(--primary-blue);
+        }
+
+        .btn-delivery:hover {
+            background-color: var(--water-light);
+        }
+
+        .btn-admin {
+            color: var(--text-light);
+        }
+
+        .btn-admin:hover {
+            color: var(--text-dark);
+        }
+
+        /* Hero Section */
+        .hero {
+            margin-top: 70px;
+            height: 90vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: linear-gradient(rgba(0, 34, 62, 0.6), rgba(0, 34, 62, 0.6)), 
+                        url('https://images.unsplash.com/photo-1548839130-3bf604e4ffba?auto=format&fit=crop&q=80&w=1920') no-repeat center center/cover;
+            color: var(--white);
+            padding: 0 20px;
+        }
+
+        .hero-content {
+            max-width: 800px;
+        }
+
+        .hero-content h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .hero-content p {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            color: #dcdde1;
+        }
+
+        .hero-cta {
+            display: inline-block;
+            background-color: var(--white);
+            color: var(--primary-blue);
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            text-decoration: none;
+            border-radius: 50px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .hero-cta:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        /* Features Section */
+        .features {
+            max-width: 1200px;
+            margin: 80px auto;
+            padding: 0 20px;
+            text-align: center;
+        }
+
+        .features h2 {
+            font-size: 2.5rem;
+            color: var(--text-dark);
+            margin-bottom: 50px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .feature-card {
+            background-color: var(--white);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .feature-card img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+        }
+
+        .feature-info {
+            padding: 25px;
+        }
+
+        .feature-info h3 {
+            font-size: 1.5rem;
+            color: var(--primary-blue);
+            margin-bottom: 10px;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--text-dark);
+            color: var(--white);
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: 50px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .nav-menu {
+                flex-direction: column;
+                width: 100%;
+                text-align: center;
+            }
+            .hero-content h1 {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
 </head>
 <body>
-  <p style="text-align:center; font-family: sans-serif; margin-top: 50px;">
-    Loading WOWDROPS...
-  </p>
+
+    <header>
+        <div class="nav-container">
+            <a href="#" class="logo">💧 WOW<span>DROPS</span></a>
+            <ul class="nav-menu">
+                <li><a href="https://script.google.com/macros/s/AKfycbzhY0E8LaGEaGol7lqOjPdvss-cHeIhvejr6yB9D5EvUevSC4haUVbOFlwtgBht819ntg/exec" class="nav-link btn-customer">Customer Portal</a></li>
+                <li><a href="https://script.google.com/macros/s/AKfycbzhY0E8LaGEaGol7lqOjPdvss-cHeIhvejr6yB9D5EvUevSC4haUVbOFlwtgBht819ntg/exec?page=delivery" class="nav-link btn-delivery">Delivery Portal</a></li>
+                <li><a href="https://script.google.com/macros/s/AKfycbzhY0E8LaGEaGol7lqOjPdvss-cHeIhvejr6yB9D5EvUevSC4haUVbOFlwtgBht819ntg/exec?page=admin" class="nav-link btn-admin">Admin Portal</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Refreshing Water, Delivered Right to Your Door.</h1>
+            <p>Experience the convenience of pure, mineral-rich water cans delivered securely and on time through our seamless digital portal.</p>
+            <a href="https://script.google.com/macros/s/AKfycbzhY0E8LaGEaGol7lqOjPdvss-cHeIhvejr6yB9D5EvUevSC4haUVbOFlwtgBht819ntg/exec" class="hero-cta">Order Water Now</a>
+        </div>
+    </section>
+
+    <section class="features">
+        <h2>Why Choose WOWDROPS?</h2>
+        <div class="feature-grid">
+            
+            <div class="feature-card">
+                <img src="https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&q=80&w=600" alt="Crystal Clear Water">
+                <div class="feature-info">
+                    <h3>100% Pure & Safe</h3>
+                    <p>Every drop goes through advanced purification and filtration processes to ensure you're drinking the absolute best.</p>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <img src="https://images.unsplash.com/photo-1608889175123-8ee362201f81?auto=format&fit=crop&q=80&w=600" alt="Fast Delivery">
+                <div class="feature-info">
+                    <h3>Lightning Fast Delivery</h3>
+                    <p>Track and manage your orders online. Our dedicated fleet ensures your water cans arrive promptly when you need them.</p>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <img src="https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=600" alt="Eco Friendly Process">
+                <div class="feature-info">
+                    <h3>Eco-Friendly Cans</h3>
+                    <p>Our premium, food-grade cans are sanitized using medical-grade technology before every refill, protecting you and the environment.</p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 WOWDROPS. All rights reserved. Ordering powered by Google Apps Script.</p>
+    </footer>
+
 </body>
 </html>
