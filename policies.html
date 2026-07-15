@@ -66,10 +66,15 @@
     <header class="glass-panel fixed top-0 w-full z-50 border-b border-slate-800">
         <div class="max-w-7xl mx-auto px-4 md:px-8 py-3 flex items-center justify-between">
             
-            <!-- Left: Logo -->
-            <div class="flex-shrink-0 w-24 md:w-32 flex justify-start">
-                <!-- Using the same Wow Drops logo from your customer portal -->
-                <img src="https://lh3.googleusercontent.com/d/14BAw0p7X-FFaDpmyL81WqKgxWGLoYrZy" class="h-10 md:h-14 w-auto object-contain" alt="Wow Drops Logo">
+            <!-- Left: Back to Home & Logo -->
+            <div class="flex-shrink-0 w-28 md:w-40 flex items-center justify-start gap-3">
+                <a href="index.html" class="flex items-center gap-1.5 text-slate-400 hover:text-indigo-400 transition group bg-slate-900/50 p-2 md:px-3 md:py-2 rounded-xl border border-slate-800 hover:border-indigo-500/30" title="Back to Home">
+                    <svg class="w-4 h-4 md:w-5 md:h-5 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    <span class="hidden md:block text-[10px] font-bold tracking-widest uppercase">Home</span>
+                </a>
+                <a href="index.html" class="hidden sm:block">
+                    <img src="https://lh3.googleusercontent.com/d/14BAw0p7X-FFaDpmyL81WqKgxWGLoYrZy" class="h-8 md:h-12 w-auto object-contain hover:scale-105 transition-transform" alt="Wow Drops Logo">
+                </a>
             </div>
 
             <!-- Center: Perfectly Centered Text -->
@@ -80,9 +85,9 @@
             </div>
 
             <!-- Right: Mobile Menu Toggle / Dummy space for PC balancing -->
-            <div class="flex-shrink-0 w-24 md:w-32 flex justify-end">
-                <button id="mobile-menu-btn" class="md:hidden text-slate-400 hover:text-white p-2 outline-none">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            <div class="flex-shrink-0 w-28 md:w-40 flex justify-end">
+                <button id="mobile-menu-btn" class="md:hidden text-slate-400 hover:text-white p-2 outline-none border border-slate-800 rounded-xl bg-slate-900/50">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
             </div>
         </div>
