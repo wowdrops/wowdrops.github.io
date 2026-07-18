@@ -144,10 +144,23 @@
             
             <div class="glass max-w-md mx-auto p-6 rounded-3xl border border-slate-850 shadow-2xl transition-all duration-300 hover:border-indigo-500/30">
                 <!-- Product Image Placeholder - Replace URL inside src when ready -->
-                <div class="w-full h-80 bg-slate-900 rounded-2xl mb-6 overflow-hidden flex items-center justify-center border border-slate-800 relative group">
-                    <img src="https://lh3.googleusercontent.com/d/150cf1iUi7a6hclSTWK27ABDMA_KHBU-f" alt="Wowdrops Premium 20L Water Can" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
-                </div>
+                <!-- Product Image with CSS Watermark -->
+<div class="w-full h-80 bg-slate-900 rounded-2xl mb-6 overflow-hidden flex items-center justify-center border border-slate-800 relative group">
+    
+    <!-- Your uploaded image (replace the link with your new Google Drive link for 20L.jpg) -->
+    <img src="https://lh3.googleusercontent.com/d/150cf1iUi7a6hclSTWK27ABDMA_KHBU-f" alt="Wowdrops Premium 20L Water Can" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+    
+    <!-- Gradient Overlay -->
+    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
+    
+    <!-- DYNAMIC WATERMARK -->
+    <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-30 group-hover:opacity-60 transition-opacity duration-500 z-10">
+        <span class="text-4xl md:text-5xl font-black text-white tracking-[0.3em] uppercase transform -rotate-12 drop-shadow-2xl select-none" style="text-shadow: 2px 4px 10px rgba(0,0,0,0.8);">
+            WOW DROPS
+        </span>
+    </div>
+
+</div>
                 <h3 class="text-xl font-bold text-white mb-2 text-left flex justify-between items-center">
                     <span>Premium 20L Water Can</span>
                     <span class="text-sm font-semibold bg-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded-full">Neighbor Supply</span>
