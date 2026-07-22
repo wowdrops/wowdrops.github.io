@@ -9,36 +9,25 @@
     
     <style>
         html {
-            /* This ensures the fixed header doesn't cover the section title when clicking an anchor link */
             scroll-padding-top: 120px; 
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #020617; /* Slate 950 */
-            color: #cbd5e1; /* Slate 300 */
+            background-color: #020617; 
+            color: #cbd5e1; 
         }
         
-        /* Custom Scrollbar for a sleek look */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-        /* Glowing text effect for active menu items */
         .active-menu-item {
             background: rgba(99, 102, 241, 0.1) !important;
             border-left-color: #818cf8 !important;
             color: #e0e7ff !important;
             text-shadow: 0 0 10px rgba(129, 140, 248, 0.5);
-        }
-
-        /* Active state specifically for the Refund button */
-        .active-refund-item {
-            background: rgba(16, 185, 129, 0.15) !important;
-            border-left-color: #10b981 !important;
-            color: #a7f3d0 !important;
-            text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
         }
 
         .glass-panel {
@@ -47,26 +36,17 @@
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
-
-        /* Special Refund Glow */
-        .emerald-glow {
-            box-shadow: 0 0 30px rgba(16, 185, 129, 0.15);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
     </style>
 </head>
 <body class="antialiased overflow-x-hidden selection:bg-indigo-500/30">
 
-    <!-- Abstract AI Background Glows -->
     <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-slate-950 to-slate-950 -z-10 pointer-events-none"></div>
     <div class="fixed bottom-0 left-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
     <div class="fixed top-40 right-0 w-96 h-96 bg-emerald-600/5 rounded-full blur-[120px] -z-10 pointer-events-none"></div>
 
-    <!-- TOP FIXED HEADER -->
     <header class="glass-panel fixed top-0 w-full z-50 border-b border-slate-800">
         <div class="max-w-7xl mx-auto px-4 md:px-8 py-3 flex items-center justify-between">
             
-            <!-- Left: Back to Home & Logo -->
             <div class="flex-shrink-0 w-28 md:w-40 flex items-center justify-start gap-3">
                 <a href="index.html" class="flex items-center gap-1.5 text-slate-400 hover:text-indigo-400 transition group bg-slate-900/50 p-2 md:px-3 md:py-2 rounded-xl border border-slate-800 hover:border-indigo-500/30" title="Back to Home">
                     <svg class="w-4 h-4 md:w-5 md:h-5 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -77,14 +57,12 @@
                 </a>
             </div>
 
-            <!-- Center: Perfectly Centered Text -->
             <div class="flex-1 text-center flex flex-col items-center justify-center">
                 <h1 class="text-xl md:text-2xl font-black text-white tracking-tight leading-none mb-1">WOW DROPS</h1>
                 <p class="text-[10px] md:text-[11px] text-slate-400 font-bold tracking-[0.2em] uppercase leading-none mb-1">Chennai</p>
                 <p class="text-[10px] md:text-xs text-indigo-400 font-black tracking-widest uppercase leading-none">Legal & Policies</p>
             </div>
 
-            <!-- Right: Mobile Menu Toggle / Dummy space for PC balancing -->
             <div class="flex-shrink-0 w-28 md:w-40 flex justify-end">
                 <button id="mobile-menu-btn" class="md:hidden text-slate-400 hover:text-white p-2 outline-none border border-slate-800 rounded-xl bg-slate-900/50">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -92,10 +70,9 @@
             </div>
         </div>
         
-        <!-- Mobile Dropdown Navigation (Hidden by default) -->
         <nav id="mobile-nav" class="hidden md:hidden border-t border-slate-800 bg-slate-900/95 max-h-[60vh] overflow-y-auto px-4 py-4 space-y-1 shadow-2xl">
             <a href="#intro" class="nav-link block w-full px-4 py-3 rounded-lg text-sm font-medium text-slate-400 border-l-4 border-transparent">Introduction</a>
-            <a href="#collect" class="nav-link block w-full px-4 py-3 rounded-lg text-sm font-medium text-slate-400 border-l-4 border-transparent">1. Information We Collect</a>
+            <a href="#privacy" class="nav-link block w-full px-4 py-3 rounded-lg text-sm font-medium text-slate-400 border-l-4 border-transparent">1. Information We Collect</a>
             <a href="#process" class="nav-link block w-full px-4 py-3 rounded-lg text-sm font-medium text-slate-400 border-l-4 border-transparent">2. How We Process Data</a>
             <a href="#share" class="nav-link block w-full px-4 py-3 rounded-lg text-sm font-medium text-slate-400 border-l-4 border-transparent">3. Sharing Information</a>
             <a href="#cookies" class="nav-link block w-full px-4 py-3 rounded-lg text-sm font-medium text-slate-400 border-l-4 border-transparent">4. Cookies & Tracking</a>
@@ -104,15 +81,13 @@
             <a href="#minors" class="nav-link block w-full px-4 py-3 rounded-lg text-sm font-medium text-slate-400 border-l-4 border-transparent">7. Minors' Data</a>
             <a href="#rights" class="nav-link block w-full px-4 py-3 rounded-lg text-sm font-medium text-slate-400 border-l-4 border-transparent">8. Privacy Rights</a>
             <a href="#dnt" class="nav-link block w-full px-4 py-3 rounded-lg text-sm font-medium text-slate-400 border-l-4 border-transparent">9. Do-Not-Track</a>
-            <a href="#refunds" class="nav-link block w-full px-4 py-3 rounded-lg text-sm font-black text-emerald-400 bg-emerald-500/5 border-l-4 border-transparent">10. Refund Policy</a>
-            <a href="#updates" class="nav-link block w-full px-4 py-3 rounded-lg text-sm font-medium text-slate-400 border-l-4 border-transparent">11. Updates</a>
-            <a href="#contact" class="nav-link block w-full px-4 py-3 rounded-lg text-sm font-medium text-slate-400 border-l-4 border-transparent">12. Contact Us</a>
+            <a href="#updates" class="nav-link block w-full px-4 py-3 rounded-lg text-sm font-medium text-slate-400 border-l-4 border-transparent">10. Updates</a>
+            <a href="#contact" class="nav-link block w-full px-4 py-3 rounded-lg text-sm font-medium text-slate-400 border-l-4 border-transparent">11. Contact Us</a>
         </nav>
     </header>
 
     <div class="flex flex-col md:flex-row max-w-7xl mx-auto pt-24 md:pt-32 pb-12 px-4 md:px-8 relative">
         
-        <!-- DESKTOP STICKY SIDEBAR -->
         <aside class="hidden md:block w-72 shrink-0 self-start sticky top-32 h-[calc(100vh-10rem)] overflow-y-auto pr-6 custom-scrollbar">
             <nav class="flex flex-col space-y-1 pb-10">
                 <a href="#intro" class="nav-link w-full text-left px-4 py-3 rounded-r-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all border-l-4 border-transparent">Introduction</a>
@@ -125,25 +100,13 @@
                 <a href="#minors" class="nav-link w-full text-left px-4 py-3 rounded-r-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all border-l-4 border-transparent">7. Minors' Data</a>
                 <a href="#rights" class="nav-link w-full text-left px-4 py-3 rounded-r-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all border-l-4 border-transparent">8. Privacy Rights</a>
                 <a href="#dnt" class="nav-link w-full text-left px-4 py-3 rounded-r-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all border-l-4 border-transparent">9. Do-Not-Track</a>
-                
-                <!-- HIGHLIGHTED REFUND ANCHOR -->
-                <a href="#refunds" class="nav-link w-full text-left px-4 py-3 rounded-r-lg text-sm font-black text-emerald-400 hover:text-emerald-300 transition-all flex justify-between items-center bg-emerald-500/5 border-l-4 border-transparent border border-y-emerald-500/10 border-r-emerald-500/10 my-2">
-                    <span>10. Refund Policy</span>
-                    <span class="relative flex h-2 w-2">
-                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    </span>
-                </a>
-                
-                <a href="#updates" class="nav-link w-full text-left px-4 py-3 rounded-r-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all border-l-4 border-transparent">11. Updates</a>
-                <a href="#contact" class="nav-link w-full text-left px-4 py-3 rounded-r-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all border-l-4 border-transparent">12. Contact Us</a>
+                <a href="#updates" class="nav-link w-full text-left px-4 py-3 rounded-r-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all border-l-4 border-transparent">10. Updates</a>
+                <a href="#contact" class="nav-link w-full text-left px-4 py-3 rounded-r-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition-all border-l-4 border-transparent">11. Contact Us</a>
             </nav>
         </aside>
 
-        <!-- MAIN SCROLLABLE CONTENT AREA -->
         <main class="flex-1 md:pl-8 space-y-16 pb-20">
             
-            <!-- INTRO SECTION -->
             <section id="intro" class="policy-section scroll-mt-28">
                 <div class="mb-6">
                     <h2 class="text-3xl font-black text-white mb-2">Terms & Conditions</h2>
@@ -160,7 +123,6 @@
                 </div>
             </section>
 
-            <!-- 1. COLLECT -->
             <section id="privacy" class="policy-section scroll-mt-28">
                 <h2 class="text-2xl font-black text-white mb-6 flex items-center gap-3"><span class="text-indigo-500 text-sm font-black bg-indigo-500/10 px-3 py-1 rounded-lg">01</span> Privacy Policy</h2>
                 <div class="glass-panel p-6 md:p-8 rounded-2xl space-y-4 shadow-lg">
@@ -179,7 +141,6 @@
                 </div>
             </section>
 
-            <!-- 2. PROCESS -->
             <section id="process" class="policy-section scroll-mt-28">
                 <h2 class="text-2xl font-black text-white mb-6 flex items-center gap-3"><span class="text-indigo-500 text-sm font-black bg-indigo-500/10 px-3 py-1 rounded-lg">02</span> How Do We Process Your Information?</h2>
                 <div class="glass-panel p-6 md:p-8 rounded-2xl space-y-4 shadow-lg">
@@ -197,7 +158,6 @@
                 </div>
             </section>
 
-            <!-- 3. SHARE -->
             <section id="share" class="policy-section scroll-mt-28">
                 <h2 class="text-2xl font-black text-white mb-6 flex items-center gap-3"><span class="text-indigo-500 text-sm font-black bg-indigo-500/10 px-3 py-1 rounded-lg">03</span> Sharing Information</h2>
                 <div class="glass-panel p-6 md:p-8 rounded-2xl space-y-4 shadow-lg">
@@ -210,7 +170,6 @@
                 </div>
             </section>
 
-            <!-- 4. COOKIES -->
             <section id="cookies" class="policy-section scroll-mt-28">
                 <h2 class="text-2xl font-black text-white mb-6 flex items-center gap-3"><span class="text-indigo-500 text-sm font-black bg-indigo-500/10 px-3 py-1 rounded-lg">04</span> Cookies & Tracking</h2>
                 <div class="glass-panel p-6 md:p-8 rounded-2xl space-y-4 shadow-lg">
@@ -220,7 +179,6 @@
                 </div>
             </section>
 
-            <!-- 5. RETAIN -->
             <section id="retain" class="policy-section scroll-mt-28">
                 <h2 class="text-2xl font-black text-white mb-6 flex items-center gap-3"><span class="text-indigo-500 text-sm font-black bg-indigo-500/10 px-3 py-1 rounded-lg">05</span> Data Retention</h2>
                 <div class="glass-panel p-6 md:p-8 rounded-2xl space-y-4 shadow-lg">
@@ -230,7 +188,6 @@
                 </div>
             </section>
 
-            <!-- 6. SAFETY -->
             <section id="safety" class="policy-section scroll-mt-28">
                 <h2 class="text-2xl font-black text-white mb-6 flex items-center gap-3"><span class="text-indigo-500 text-sm font-black bg-indigo-500/10 px-3 py-1 rounded-lg">06</span> Information Safety</h2>
                 <div class="glass-panel p-6 md:p-8 rounded-2xl space-y-4 shadow-lg">
@@ -240,7 +197,6 @@
                 </div>
             </section>
 
-            <!-- 7. MINORS -->
             <section id="minors" class="policy-section scroll-mt-28">
                 <h2 class="text-2xl font-black text-white mb-6 flex items-center gap-3"><span class="text-indigo-500 text-sm font-black bg-indigo-500/10 px-3 py-1 rounded-lg">07</span> Data From Minors</h2>
                 <div class="glass-panel p-6 md:p-8 rounded-2xl space-y-4 shadow-lg">
@@ -249,7 +205,6 @@
                 </div>
             </section>
 
-            <!-- 8. RIGHTS -->
             <section id="rights" class="policy-section scroll-mt-28">
                 <h2 class="text-2xl font-black text-white mb-6 flex items-center gap-3"><span class="text-indigo-500 text-sm font-black bg-indigo-500/10 px-3 py-1 rounded-lg">08</span> Your Privacy Rights</h2>
                 <div class="glass-panel p-6 md:p-8 rounded-2xl space-y-4 shadow-lg">
@@ -262,7 +217,6 @@
                 </div>
             </section>
 
-            <!-- 9. DNT -->
             <section id="dnt" class="policy-section scroll-mt-28">
                 <h2 class="text-2xl font-black text-white mb-6 flex items-center gap-3"><span class="text-indigo-500 text-sm font-black bg-indigo-500/10 px-3 py-1 rounded-lg">09</span> Do-Not-Track Controls</h2>
                 <div class="glass-panel p-6 md:p-8 rounded-2xl space-y-4 shadow-lg">
@@ -270,77 +224,16 @@
                 </div>
             </section>
 
-            <!-- 10. REFUNDS -->
-            <section id="refunds" class="policy-section scroll-mt-28">
-                <div class="flex items-center gap-3 mb-6">
-                    <span class="text-emerald-500 text-sm font-black bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/20">10</span>
-                    <h2 class="text-2xl font-black text-white tracking-tight">Refund, Return & Cancellation</h2>
-                </div>
-                
-                <div class="glass-panel emerald-glow p-6 md:p-8 rounded-2xl relative overflow-hidden">
-                    <!-- Tech aesthetic background accents -->
-                    <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px]"></div>
-                    <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500/0 via-emerald-500 to-emerald-500/0"></div>
-                    
-                    <p class="text-emerald-300 font-medium mb-8 text-base md:text-lg">At Wowdrops, customer satisfaction is our top priority. We strive to deliver premium quality canned drinking water and seamless subscription services right to your doorstep.</p>
-
-                    <div class="space-y-6 relative z-10">
-                        <!-- Policy Block 1 -->
-                        <div class="bg-slate-950/50 p-5 rounded-xl border border-emerald-500/20 hover:border-emerald-500/50 transition-colors">
-                            <div class="flex items-center gap-3 mb-3">
-                                <div class="bg-emerald-500/20 p-2 rounded text-emerald-400">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                                </div>
-                                <h3 class="text-white font-bold text-lg">Returns & Replacements</h3>
-                            </div>
-                            <p class="text-sm text-slate-300 leading-relaxed">If you are not entirely satisfied with the quality of the product delivered, or if you receive a damaged/leaking water can, you can return it immediately.</p>
-                            <p class="text-sm text-slate-300 leading-relaxed mt-2">To initiate a return or replacement, please contact our support team <strong>within 24 hours</strong> of delivery. You can reach us via email at <a href="mailto:wowdropsfoodandbeverages@gmail.com" class="text-emerald-400 hover:underline">wowdropsfoodandbeverages@gmail.com</a> or call/WhatsApp us directly at <strong>+91 70928 88999</strong>. Upon verification, our delivery executive will collect the product and arrange for a fresh replacement or initiate a refund.</p>
-                        </div>
-
-                        <!-- Policy Block 2 -->
-                        <div class="bg-slate-950/50 p-5 rounded-xl border border-emerald-500/20 hover:border-emerald-500/50 transition-colors">
-                            <div class="flex items-center gap-3 mb-3">
-                                <div class="bg-emerald-500/20 p-2 rounded text-emerald-400">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                </div>
-                                <h3 class="text-white font-bold text-lg">Cancellation Policy</h3>
-                            </div>
-                            <ul class="text-sm text-slate-300 leading-relaxed space-y-2">
-                                <li><strong class="text-emerald-400">On-Demand Orders:</strong> You can cancel an on-demand water can order at any time before it leaves our distribution center. Once the order is out for delivery, cancellations cannot be processed.</li>
-                                <li><strong class="text-emerald-400">Subscription Plans:</strong> If you wish to cancel or pause your ongoing water subscription plan, you can do so through the Wowdrops app or by contacting our customer support line.</li>
-                            </ul>
-                        </div>
-
-                        <!-- Policy Block 3 -->
-                        <div class="bg-slate-950/50 p-5 rounded-xl border border-emerald-500/20 hover:border-emerald-500/50 transition-colors">
-                            <div class="flex items-center gap-3 mb-3">
-                                <div class="bg-emerald-500/20 p-2 rounded text-emerald-400">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08-.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                </div>
-                                <h3 class="text-white font-bold text-lg">Refunds Processing</h3>
-                            </div>
-                            <p class="text-sm text-slate-300 leading-relaxed">Refunds will be initiated under valid circumstances, such as canceled orders (prior to dispatch), confirmed product quality issues, or account balance closures for subscription plans.</p>
-                            <div class="mt-3 inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 px-4 py-2 rounded text-xs font-bold text-emerald-300 uppercase tracking-widest">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                Credited within 7 Working Days (Bank/UPI/Wallet)
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 11. UPDATES -->
             <section id="updates" class="policy-section scroll-mt-28">
-                <h2 class="text-2xl font-black text-white mb-6 flex items-center gap-3"><span class="text-indigo-500 text-sm font-black bg-indigo-500/10 px-3 py-1 rounded-lg">11</span> Policy Updates</h2>
+                <h2 class="text-2xl font-black text-white mb-6 flex items-center gap-3"><span class="text-indigo-500 text-sm font-black bg-indigo-500/10 px-3 py-1 rounded-lg">10</span> Policy Updates</h2>
                 <div class="glass-panel p-6 md:p-8 rounded-2xl space-y-4 shadow-lg">
                     <p class="text-indigo-300 font-semibold mb-4">In Short: Yes, we will update this notice as necessary to stay compliant with relevant laws.</p>
                     <p>We may update this Privacy Notice from time to time. The updated version will be indicated by an updated "Revised" date at the top of this Privacy Notice. We encourage you to review this Privacy Notice frequently to be informed of how we are protecting your information.</p>
                 </div>
             </section>
 
-            <!-- 12. CONTACT -->
             <section id="contact" class="policy-section scroll-mt-28">
-                <h2 class="text-2xl font-black text-white mb-6 flex items-center gap-3"><span class="text-indigo-500 text-sm font-black bg-indigo-500/10 px-3 py-1 rounded-lg">12</span> Contact Us</h2>
+                <h2 class="text-2xl font-black text-white mb-6 flex items-center gap-3"><span class="text-indigo-500 text-sm font-black bg-indigo-500/10 px-3 py-1 rounded-lg">11</span> Contact Us</h2>
                 <div class="glass-panel p-6 md:p-8 rounded-2xl space-y-4 shadow-lg">
                     <p>If you have questions or comments about this notice, you may email us or contact us by post at:</p>
                     
@@ -373,7 +266,6 @@
     </div>
 
     <script>
-        // Mobile menu toggle logic
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const mobileNav = document.getElementById('mobile-nav');
         
@@ -381,7 +273,6 @@
             mobileNav.classList.toggle('hidden');
         });
 
-        // Close mobile menu when a link is clicked
         const mobileLinks = mobileNav.querySelectorAll('.nav-link');
         mobileLinks.forEach(link => {
             link.addEventListener('click', () => {
@@ -389,7 +280,6 @@
             });
         });
 
-        // Interactive "Scroll Spy" - Highlights menu items as you scroll
         const sections = document.querySelectorAll("section");
         const navLinks = document.querySelectorAll(".nav-link");
 
@@ -397,32 +287,23 @@
             let current = "";
             
             sections.forEach((section) => {
-                // Determine how far down the section is
                 const sectionTop = section.offsetTop;
                 const sectionHeight = section.clientHeight;
                 
-                // If user has scrolled to the section (offset by a comfortable header margin)
                 if (pageYOffset >= (sectionTop - 150)) {
                     current = section.getAttribute("id");
                 }
             });
 
             navLinks.forEach((link) => {
-                // Remove active classes
-                link.classList.remove("active-menu-item", "active-refund-item");
+                link.classList.remove("active-menu-item");
                 
-                // Add active class to the currently viewed section
                 if (link.getAttribute("href") === "#" + current) {
-                    if (current === 'refunds') {
-                        link.classList.add("active-refund-item");
-                    } else {
-                        link.classList.add("active-menu-item");
-                    }
+                    link.classList.add("active-menu-item");
                 }
             });
         });
 
-        // Run once on load to highlight correct menu item immediately
         window.dispatchEvent(new Event('scroll'));
     </script>
 </body>
