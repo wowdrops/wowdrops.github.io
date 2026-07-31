@@ -89,6 +89,7 @@ window.onload = function () {
   {
     ENABLE_PHONEPE_GATEWAY = false;
   }
+  checkForPaymentRedirect();
 };
 
 function getDefaultDateRange() {
