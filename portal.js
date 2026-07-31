@@ -499,8 +499,6 @@ function refreshCustomerSessionData(cpn) {
   );
 
   callBackendAPI("getFinancialLedgerData", { cpn: cpn, cachedOutRow: activeUserSession.rowCache.out, cachedDbRow: activeUserSession.rowCache.db },
-    function (ledgerData) {
-
       function(ledgerData) {
           // 🛑 NEW: INSTANT INACTIVE KICK-OUT 🛑
           if (ledgerData.status === 'INACTIVE') {
