@@ -25,13 +25,14 @@ function callBackendAPI(actionName, payload, onSuccess, onFailure) {
 // FEATURE FLAGS & CONSTANTS
 // ==========================================
 const ALLOW_MANUAL_CAN_ENTRY = false;
+const CURRENT_ENV = "Live";
 var ENABLE_PHONEPE_GATEWAY = false; // "True" only for dev testing
 const PAYMENT_GATEWAY_UPIID = "cpnawin-5@okaxis";
 const PAYMENT_GATEWAY_PAYEENAME = "WOW DROPS FOOD AND BEVERAGES";
 const DEFAULTERS_DASHBOARD_COUNT = 10;
 const CONFIRMATION_STYLE = 'toggle';
 
-const CURRENT_ENV = "Live";
+
 
 var activeUserSession = null;
 var passwordSetupSource = 'login';
@@ -80,9 +81,13 @@ window.onload = function () {
     refreshCustomerSessionData(activeUserSession.cpn);
   }
 
-  console.log("System running in: " + CURRENT_ENV);
-  if (CURRENT_ENV === 'Test') {
+  //console.log("System running in: " + CURRENT_ENV);
+  if (CURRENT_ENV === 'Live') {
     ENABLE_PHONEPE_GATEWAY = true;
+  }
+  else
+  {
+    ENABLE_PHONEPE_GATEWAY = false;
   }
 };
 
