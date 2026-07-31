@@ -92,6 +92,12 @@ window.onload = function () {
   checkForPaymentRedirect();
 };
 
+function formatCurrency(amount) {
+  var num = parseFloat(amount) || 0;
+  // Rounds to a maximum of 2 decimal places cleanly
+  return (Math.round(num * 100) / 100).toString();
+}
+
 function getDefaultDateRange() {
   var end = new Date();
   var start = new Date();
@@ -582,12 +588,12 @@ function renderOrderWidget() {
 
 function renderFinancialWidget() {
   document.getElementById('val-cans').innerText = activeUserSession.cansWithCustomer || 0;
-  document.getElementById('val-advance').innerText = "₹" + (activeUserSession.advance || 0);
-  document.getElementById('dash-outstanding').innerText = "₹" + (activeUserSession.outstanding || 0);
+  document.getElementById('val-advance').innerText = "₹" + formatCurrency(activeUserSession.advance);
+  document.getElementById('dash-outstanding').innerText = "₹" + formatCurrency(activeUserSession.outstanding);
 
   var prevSum = (activeUserSession.older || 0) + (activeUserSession.lastMon || 0);
-  document.getElementById('dash-previous-dues').innerText = "₹" + prevSum;
-  document.getElementById('dash-current-month').innerText = "₹" + (activeUserSession.currentMon || 0);
+  document.getElementById('dash-previous-dues').innerText = "₹" + formatCurrency(prevSum);
+  document.getElementById('dash-current-month').innerText = "₹" + formatCurrency(activeUserSession.currentMon);
 
   var monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   document.getElementById('current-month-name').innerText = monthNames[new Date().getMonth()];
@@ -948,11 +954,13 @@ function openPaymentPopup(type = 'total') {
   if (!activeUserSession) return;
 
   var prevSum = (activeUserSession.older || 0) + (activeUserSession.lastMon || 0);
-  document.getElementById('split-older').innerText = "₹" + (activeUserSession.older || 0);
-  document.getElementById('split-last').innerText = "₹" + (activeUserSession.lastMon || 0);
-  document.getElementById('split-previous').innerText = "₹" + prevSum;
-  document.getElementById('split-curr').innerText = "₹" + (activeUserSession.currentMon || 0);
-  document.getElementById('split-total').innerText = "₹" + (activeUserSession.outstanding || 0);
+  
+  // Wrapped all values in formatCurrency() to prevent crazy decimals
+  document.getElementById('split-older').innerText = "₹" + formatCurrency(activeUserSession.older);
+  document.getElementById('split-last').innerText = "₹" + formatCurrency(activeUserSession.lastMon);
+  document.getElementById('split-previous').innerText = "₹" + formatCurrency(prevSum);
+  document.getElementById('split-curr').innerText = "₹" + formatCurrency(activeUserSession.currentMon);
+  document.getElementById('split-total').innerText = "₹" + formatCurrency(activeUserSession.outstanding);
 
   var radioToSelect = document.querySelector('input[value="' + type + '"]');
   if (radioToSelect) {
@@ -960,7 +968,7 @@ function openPaymentPopup(type = 'total') {
     updatePayInput(radioToSelect);
   } else {
     document.querySelector('input[value="total"]').checked = true;
-    document.getElementById('pay-custom-amt').value = activeUserSession.outstanding || 0;
+    document.getElementById('pay-custom-amt').value = formatCurrency(activeUserSession.outstanding);
   }
 
   document.getElementById('payment-modal').classList.remove('hidden');
@@ -975,7 +983,7 @@ function updatePayInput(radio) {
     case 'currentMon': val = activeUserSession.currentMon || 0; break;
     case 'total': val = activeUserSession.outstanding || 0; break;
   }
-  document.getElementById('pay-custom-amt').value = val;
+  document.getElementById('pay-custom-amt').value = formatCurrency(val);
 }
 
 function closePaymentPopup() {
