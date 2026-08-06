@@ -68,7 +68,7 @@ window.limitReasonE = "";
 
 // APP VERSIONING & CACHE BUSTING
 (function () {
-  var APP_VERSION = "2.2";
+  var APP_VERSION = "2.3";
   var savedVersion = localStorage.getItem('wowdrops_app_version');
 
   if (savedVersion !== APP_VERSION) {
@@ -545,6 +545,7 @@ function showDashboardSkeletons() {
   submitBtn.innerHTML = "<span class='animate-pulse'>Fetching Live Status...</span>";
 }
 
+/*
 function refreshCustomerSessionData(cpn) {
   if (!activeUserSession.rowCache) activeUserSession.rowCache = { ord: null, out: null, db: null };
 
@@ -608,6 +609,86 @@ function refreshCustomerSessionData(cpn) {
       );
     }
   );
+
+  setTimeout(function () { window.scrollTo(0, 1); window.scrollTo(0, 0); }, 300);
+}
+*/
+
+// 1. Helper to wrap your existing callback API into a modern Promise
+const callBackendAsync = (action, payload) => {
+  return new Promise((resolve, reject) => {
+    callBackendAPI(action, payload, resolve, reject);
+  });
+};
+
+// 2. Helper to force a small pause for Google Apps Script redirects
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// 3. The newly refactored Dashboard Loader
+async function refreshCustomerSessionData(cpn) {
+  if (!activeUserSession.rowCache) activeUserSession.rowCache = { ord: null, out: null, db: null };
+
+  try {
+    // A. Fetch Order Data FIRST and wait for it to fully complete
+    const fastData = await callBackendAsync("getQuickOrderData", { cpn: cpn, cachedOrdRow: activeUserSession.rowCache.ord });
+    
+    activeUserSession.uniqueNo = fastData.existingOrder.uniqueNo; 
+    activeUserSession.rowCache.ord = fastData.existingOrder.rowNo;
+    activeUserSession.existingOrdD = fastData.existingOrder.ordD;
+    activeUserSession.existingOrdE = fastData.existingOrder.ordE;
+    activeUserSession.rate = fastData.existingOrder.rate;
+    activeUserSession.ordDate = fastData.existingOrder.ordDate;
+    activeUserSession.hasExistingOrder = fastData.existingOrder.isExisting;
+    activeUserSession.supplyConfig = fastData.supplyConfig;
+
+    var submitBtn = document.getElementById('btn-submit-order');
+    submitBtn.disabled = false;
+    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    submitBtn.innerHTML = "<span>Submit Request</span>";
+
+    renderOrderWidget();
+
+    // ⏱️ CRITICAL FIX: 600ms delay to clear the browser's redirect tunnel
+    await sleep(600);
+
+    // B. Fetch Ledger Data SECOND 
+    const ledgerData = await callBackendAsync("getFinancialLedgerData", { cpn: cpn, cachedOutRow: activeUserSession.rowCache.out, cachedDbRow: activeUserSession.rowCache.db });
+    
+    if (ledgerData.status === 'INACTIVE') {
+        localStorage.removeItem('wowdrops_customer_session');
+        activeUserSession = null;
+        switchView('view-login');
+        var loginErr = document.getElementById('login-err');
+        loginErr.innerText = "Your status is changed to inactive. Please contact wowdrops";
+        loginErr.classList.remove('hidden');
+        return; 
+    }
+
+    activeUserSession.rowCache.out = ledgerData.outRowNo;
+    activeUserSession.rowCache.db = ledgerData.dbRowNo;
+    activeUserSession.outstanding = ledgerData.outstanding;
+    activeUserSession.currentMon = ledgerData.currentMon;
+    activeUserSession.lastMon = ledgerData.lastMon;
+    activeUserSession.older = ledgerData.older;
+    activeUserSession.cansWithCustomer = ledgerData.cansWithCustomer;
+    activeUserSession.advance = ledgerData.advance;
+    activeUserSession.maxClientD = ledgerData.maxClientD;
+    activeUserSession.maxClientE = ledgerData.maxClientE;
+    activeUserSession.email = ledgerData.email;
+    activeUserSession.whatsapp = ledgerData.whatsapp;
+    activeUserSession.defaultRate = ledgerData.defaultRate;
+
+    localStorage.setItem('wowdrops_customer_session', JSON.stringify(activeUserSession));
+
+    document.getElementById('dash-skel').classList.add('hidden');
+    renderFinancialWidget();
+
+    checkEmailCollection();
+
+  } catch (error) {
+    console.error("Dashboard failed to load securely:", error);
+    alert("Failed to load dashboard data. Please try refreshing the page.");
+  }
 
   setTimeout(function () { window.scrollTo(0, 1); window.scrollTo(0, 0); }, 300);
 }
