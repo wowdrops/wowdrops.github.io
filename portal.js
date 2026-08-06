@@ -96,7 +96,29 @@ window.onload = function () {
     document.getElementById('can-input-wrapper').classList.remove('cursor-not-allowed');
   }
 
-  function isServerBusy() {
+  
+
+  var savedSession = localStorage.getItem('wowdrops_customer_session');
+  if (savedSession) {
+    activeUserSession = JSON.parse(savedSession);
+    updateHeaderDisplays();
+    showDashboardSkeletons();
+    switchView('view-dashboard');
+    refreshCustomerSessionData(activeUserSession.cpn);
+  }
+
+  //console.log("System running in: " + CURRENT_ENV);
+  if (CURRENT_ENV === 'Live') {
+    ENABLE_PHONEPE_GATEWAY = true;
+  }
+  else
+  {
+    ENABLE_PHONEPE_GATEWAY = false;
+  }
+  checkForPaymentRedirect();
+};
+
+function isServerBusy() {
   if (activeApiRequests > 0) {
     showBusyMessage();
     return true; 
@@ -122,26 +144,6 @@ function showBusyMessage() {
       setTimeout(() => msgEl.classList.add('hidden'), 300); 
   }, 2000);
 }
-
-  var savedSession = localStorage.getItem('wowdrops_customer_session');
-  if (savedSession) {
-    activeUserSession = JSON.parse(savedSession);
-    updateHeaderDisplays();
-    showDashboardSkeletons();
-    switchView('view-dashboard');
-    refreshCustomerSessionData(activeUserSession.cpn);
-  }
-
-  //console.log("System running in: " + CURRENT_ENV);
-  if (CURRENT_ENV === 'Live') {
-    ENABLE_PHONEPE_GATEWAY = true;
-  }
-  else
-  {
-    ENABLE_PHONEPE_GATEWAY = false;
-  }
-  checkForPaymentRedirect();
-};
 
 
 
