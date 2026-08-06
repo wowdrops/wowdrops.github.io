@@ -68,7 +68,7 @@ window.limitReasonE = "";
 
 // APP VERSIONING & CACHE BUSTING
 (function () {
-  var APP_VERSION = "2.3";
+  var APP_VERSION = "4.1";
   var savedVersion = localStorage.getItem('wowdrops_app_version');
 
   if (savedVersion !== APP_VERSION) {
