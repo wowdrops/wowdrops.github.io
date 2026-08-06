@@ -11,12 +11,33 @@ function callBackendAPI(actionName, payload, onSuccess, onFailure) {
   fetch(APPS_SCRIPT_API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    redirect: 'follow'
   })
-    .then(response => response.json())
-    .then(data => { if (onSuccess) onSuccess(data); })
+    .then(async (response) => {
+      // 1. Check if the HTTP response is actually OK before assuming we have data
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status} - ${response.statusText}`);
+      }
+      
+      // 2. Read the response as raw text first
+      const rawText = await response.text();
+      
+      // 3. Attempt to parse it as JSON
+      try {
+        const data = JSON.parse(rawText);
+        return data;
+      } catch (parseError) {
+        // If Google sent back HTML (an error page) instead of JSON, this will catch it
+        console.error("Failed to parse JSON. Raw response from Google:", rawText);
+        throw new Error("Server returned an invalid JSON response (likely an HTML error).");
+      }
+    })
+    .then(data => { 
+      if (onSuccess) onSuccess(data); 
+    })
     .catch(error => {
-      console.error("API Error:", error);
+      console.error("API Error in callBackendAPI:", error);
       if (onFailure) onFailure(error);
     });
 }
