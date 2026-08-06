@@ -18,8 +18,22 @@ function callBackendAPI(actionName, payload, onSuccess, onFailure) {
     body: JSON.stringify(payload),
     redirect: 'follow'
   })
-    .then(response => response.json())
-    .then(data => { if (onSuccess) onSuccess(data); })
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status} - ${response.statusText}`);
+      }
+      const rawText = await response.text();
+      try {
+        const data = JSON.parse(rawText);
+        return data;
+      } catch (parseError) {
+        console.error("Failed to parse JSON. Raw response from Google:", rawText);
+        throw new Error("Server returned an invalid JSON response.");
+      }
+    })
+    .then(data => { 
+      if (onSuccess) onSuccess(data); 
+    })
     .catch(error => {
       console.error("API Error in callBackendAPI:", error);
       if (onFailure) onFailure(error);
@@ -1132,3 +1146,17 @@ window.addEventListener('click', function (event) {
     if (!menu.contains(event.target) && !menuButton) menu.classList.add('hidden');
   }
 });
+
+function loadActivityLogLazy() {
+  if (isServerBusy()) return; // Prevents clicking during initial load
+  
+  var activityContainer = document.getElementById('recent-activity-container');
+  
+  // Toggle visibility of the container
+  activityContainer.classList.toggle('hidden');
+  
+  // If we just opened it, fetch the data
+  if (!activityContainer.classList.contains('hidden')) {
+      fetchDashboardActivity();
+  }
+}
