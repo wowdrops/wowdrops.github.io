@@ -4,20 +4,43 @@
 // ⚠️ PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
 const APPS_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbzhY0E8LaGEaGol7lqOjPdvss-cHeIhvejr6yB9D5EvUevSC4haUVbOFlwtgBht819ntg/exec";
 
+
 // Universal Fetch Wrapper to communicate with Google Apps Script
 function callBackendAPI(actionName, payload, onSuccess, onFailure) {
   payload.action = actionName;
+  
+  // Traffic Cop: Add 1 when request starts
+  activeApiRequests++; 
 
   fetch(APPS_SCRIPT_API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    redirect: 'follow'
   })
-    .then(response => response.json())
-    .then(data => { if (onSuccess) onSuccess(data); })
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status} - ${response.statusText}`);
+      }
+      const rawText = await response.text();
+      try {
+        const data = JSON.parse(rawText);
+        return data;
+      } catch (parseError) {
+        console.error("Failed to parse JSON. Raw response from Google:", rawText);
+        throw new Error("Server returned an invalid JSON response.");
+      }
+    })
+    .then(data => { 
+      if (onSuccess) onSuccess(data); 
+    })
     .catch(error => {
-      console.error("API Error:", error);
+      console.error("API Error in callBackendAPI:", error);
       if (onFailure) onFailure(error);
+    })
+    .finally(() => {
+      // Traffic Cop: Subtract 1 when request finishes
+      activeApiRequests--; 
     });
 }
 
@@ -34,6 +57,7 @@ const CONFIRMATION_STYLE = 'toggle';
 
 
 
+var activeApiRequests = 0;
 var activeUserSession = null;
 var passwordSetupSource = 'login';
 window.currentMaxOrd = null;
@@ -72,6 +96,33 @@ window.onload = function () {
     document.getElementById('can-input-wrapper').classList.remove('cursor-not-allowed');
   }
 
+  function isServerBusy() {
+  if (activeApiRequests > 0) {
+    showBusyMessage();
+    return true; 
+  }
+  return false; 
+}
+
+function showBusyMessage() {
+  var msgEl = document.getElementById('global-busy-msg');
+  if (!msgEl) {
+    msgEl = document.createElement('div');
+    msgEl.id = 'global-busy-msg';
+    msgEl.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-[11px] font-bold px-4 py-2 rounded-full shadow-lg z-50 transition-opacity duration-300';
+    msgEl.innerText = '⏳ Processing... please wait a moment.';
+    document.body.appendChild(msgEl);
+  }
+  
+  msgEl.style.opacity = '1';
+  msgEl.classList.remove('hidden');
+  
+  setTimeout(function() { 
+      msgEl.style.opacity = '0'; 
+      setTimeout(() => msgEl.classList.add('hidden'), 300); 
+  }, 2000);
+}
+
   var savedSession = localStorage.getItem('wowdrops_customer_session');
   if (savedSession) {
     activeUserSession = JSON.parse(savedSession);
@@ -91,6 +142,8 @@ window.onload = function () {
   }
   checkForPaymentRedirect();
 };
+
+
 
 function formatCurrency(amount) {
   var num = parseFloat(amount) || 0;
@@ -249,7 +302,10 @@ function executeCancelOrder() {
   );
 }
 
-function toggleMenu() { document.getElementById('dropdown-menu').classList.toggle('hidden'); }
+function toggleMenu() { 
+  if (isServerBusy()) return; // Protection added
+  document.getElementById('dropdown-menu').classList.toggle('hidden'); 
+}
 
 function syncCans(val) {
   var numVal = parseInt(val) || 0;
@@ -490,9 +546,10 @@ function showDashboardSkeletons() {
 function refreshCustomerSessionData(cpn) {
   if (!activeUserSession.rowCache) activeUserSession.rowCache = { ord: null, out: null, db: null };
 
+  // 1. Fetch Order Data FIRST
   callBackendAPI("getQuickOrderData", { cpn: cpn, cachedOrdRow: activeUserSession.rowCache.ord },
     function (fastData) {
-      activeUserSession.uniqueNo = fastData.existingOrder.uniqueNo; // <-- NEW
+      activeUserSession.uniqueNo = fastData.existingOrder.uniqueNo; 
       activeUserSession.rowCache.ord = fastData.existingOrder.rowNo;
       activeUserSession.existingOrdD = fastData.existingOrder.ordD;
       activeUserSession.existingOrdE = fastData.existingOrder.ordE;
@@ -507,45 +564,46 @@ function refreshCustomerSessionData(cpn) {
       submitBtn.innerHTML = "<span>Submit Request</span>";
 
       renderOrderWidget();
-    }
-  );
 
-  callBackendAPI("getFinancialLedgerData", { cpn: cpn, cachedOutRow: activeUserSession.rowCache.out, cachedDbRow: activeUserSession.rowCache.db },
-      function(ledgerData) {
-          // 🛑 NEW: INSTANT INACTIVE KICK-OUT 🛑
-          if (ledgerData.status === 'INACTIVE') {
-              localStorage.removeItem('wowdrops_customer_session');
-              activeUserSession = null;
-              switchView('view-login');
-              var loginErr = document.getElementById('login-err');
-              loginErr.innerText = "Your status is changed to inactive. please contact wowdrops";
-              loginErr.classList.remove('hidden');
-              return; // Halt execution instantly
-          }
+      // 2. Fetch Ledger Data SECOND
+      callBackendAPI("getFinancialLedgerData", { cpn: cpn, cachedOutRow: activeUserSession.rowCache.out, cachedDbRow: activeUserSession.rowCache.db },
+          function(ledgerData) {
+              if (ledgerData.status === 'INACTIVE') {
+                  localStorage.removeItem('wowdrops_customer_session');
+                  activeUserSession = null;
+                  switchView('view-login');
+                  var loginErr = document.getElementById('login-err');
+                  loginErr.innerText = "Your status is changed to inactive. Please contact wowdrops";
+                  loginErr.classList.remove('hidden');
+                  return; 
+              }
 
-      activeUserSession.rowCache.out = ledgerData.outRowNo;
-      activeUserSession.rowCache.db = ledgerData.dbRowNo;
+          activeUserSession.rowCache.out = ledgerData.outRowNo;
+          activeUserSession.rowCache.db = ledgerData.dbRowNo;
 
-      activeUserSession.outstanding = ledgerData.outstanding;
-      activeUserSession.currentMon = ledgerData.currentMon;
-      activeUserSession.lastMon = ledgerData.lastMon;
-      activeUserSession.older = ledgerData.older;
-      activeUserSession.cansWithCustomer = ledgerData.cansWithCustomer;
-      activeUserSession.advance = ledgerData.advance;
-      activeUserSession.maxClientD = ledgerData.maxClientD;
-      activeUserSession.maxClientE = ledgerData.maxClientE;
+          activeUserSession.outstanding = ledgerData.outstanding;
+          activeUserSession.currentMon = ledgerData.currentMon;
+          activeUserSession.lastMon = ledgerData.lastMon;
+          activeUserSession.older = ledgerData.older;
+          activeUserSession.cansWithCustomer = ledgerData.cansWithCustomer;
+          activeUserSession.advance = ledgerData.advance;
+          activeUserSession.maxClientD = ledgerData.maxClientD;
+          activeUserSession.maxClientE = ledgerData.maxClientE;
 
-      activeUserSession.email = ledgerData.email;
-      activeUserSession.whatsapp = ledgerData.whatsapp;
-      activeUserSession.defaultRate = ledgerData.defaultRate;
+          activeUserSession.email = ledgerData.email;
+          activeUserSession.whatsapp = ledgerData.whatsapp;
+          activeUserSession.defaultRate = ledgerData.defaultRate;
 
-      localStorage.setItem('wowdrops_customer_session', JSON.stringify(activeUserSession));
+          localStorage.setItem('wowdrops_customer_session', JSON.stringify(activeUserSession));
 
-      document.getElementById('dash-skel').classList.add('hidden');
-      renderFinancialWidget();
+          document.getElementById('dash-skel').classList.add('hidden');
+          renderFinancialWidget();
 
-      checkEmailCollection();
-      fetchDashboardActivity();
+          checkEmailCollection();
+          
+          // DO NOT CALL fetchDashboardActivity() HERE ANYMORE!
+        }
+      );
     }
   );
 
@@ -873,7 +931,7 @@ async function uploadPaymentScreenshot() {
         document.getElementById('ss-remark').value = '';
         document.getElementById('ss-file').value = '';
         loadScreenshotData();
-        fetchDashboardActivity();
+        //fetchDashboardActivity();
       } else { alert(res.message); }
     }
   );
@@ -936,7 +994,7 @@ function confirmScreenshotDeletion(encodedUrl) {
         alert(res.message);
         if (res.success) {
           loadScreenshotData();
-          fetchDashboardActivity();
+          //fetchDashboardActivity();
         }
       },
       function (err) {
@@ -1086,3 +1144,17 @@ window.addEventListener('click', function (event) {
     if (!menu.contains(event.target) && !menuButton) menu.classList.add('hidden');
   }
 });
+
+function loadActivityLogLazy() {
+  if (isServerBusy()) return; // Prevents clicking during initial load
+  
+  var activityContainer = document.getElementById('recent-activity-container'); // Make sure your HTML div has this ID
+  
+  // Toggle visibility of the container
+  activityContainer.classList.toggle('hidden');
+  
+  // If we just opened it, fetch the data
+  if (!activityContainer.classList.contains('hidden')) {
+      fetchDashboardActivity();
+  }
+}
