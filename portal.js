@@ -3,46 +3,9 @@
 // ==========================================
 // ⚠️ PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
 const APPS_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbzhY0E8LaGEaGol7lqOjPdvss-cHeIhvejr6yB9D5EvUevSC4haUVbOFlwtgBht819ntg/exec";
+var activeApiRequests = 0;
 
 
-// Universal Fetch Wrapper to communicate with Google Apps Script
-function callBackendAPI(actionName, payload, onSuccess, onFailure) {
-  payload.action = actionName;
-  
-  // Traffic Cop: Add 1 when request starts
-  activeApiRequests++; 
-
-  fetch(APPS_SCRIPT_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload),
-    redirect: 'follow'
-  })
-    .then(async (response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP Error: ${response.status} - ${response.statusText}`);
-      }
-      const rawText = await response.text();
-      try {
-        const data = JSON.parse(rawText);
-        return data;
-      } catch (parseError) {
-        console.error("Failed to parse JSON. Raw response from Google:", rawText);
-        throw new Error("Server returned an invalid JSON response.");
-      }
-    })
-    .then(data => { 
-      if (onSuccess) onSuccess(data); 
-    })
-    .catch(error => {
-      console.error("API Error in callBackendAPI:", error);
-      if (onFailure) onFailure(error);
-    })
-    .finally(() => {
-      // Traffic Cop: Subtract 1 when request finishes
-      activeApiRequests--; 
-    });
-}
 
 // ========================================== 
 // FEATURE FLAGS & CONSTANTS
@@ -55,9 +18,6 @@ const PAYMENT_GATEWAY_PAYEENAME = "WOW DROPS FOOD AND BEVERAGES";
 const DEFAULTERS_DASHBOARD_COUNT = 10;
 const CONFIRMATION_STYLE = 'toggle';
 
-
-
-var activeApiRequests = 0;
 var activeUserSession = null;
 var passwordSetupSource = 'login';
 window.currentMaxOrd = null;
@@ -68,7 +28,7 @@ window.limitReasonE = "";
 
 // APP VERSIONING & CACHE BUSTING
 (function () {
-  var APP_VERSION = "4.1";
+  var APP_VERSION = "4.2";
   var savedVersion = localStorage.getItem('wowdrops_app_version');
 
   if (savedVersion !== APP_VERSION) {
@@ -158,6 +118,64 @@ function getDefaultDateRange() {
   var start = new Date();
   start.setDate(end.getDate() - 30);
   return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+}
+
+
+// Request Queue Management
+var apiQueue = [];
+var isProcessingQueue = false;
+
+function callBackendAPI(actionName, payload, onSuccess, onFailure) {
+  payload.action = actionName;
+
+  // Add the request to the queue
+  apiQueue.push({ payload, onSuccess, onFailure });
+
+  // Process queue if not already running
+  processApiQueue();
+}
+
+async function processApiQueue() {
+  if (isProcessingQueue || apiQueue.length === 0) return;
+
+  isProcessingQueue = true;
+  activeApiRequests++;
+
+  const currentRequest = apiQueue.shift();
+
+  try {
+    const response = await fetch(APPS_SCRIPT_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(currentRequest.payload),
+      redirect: 'follow'
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP Error: ${response.status} - ${response.statusText}`);
+    }
+
+    const rawText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch (parseError) {
+      console.error("Failed to parse JSON. Raw response from Google:", rawText);
+      throw new Error("Server returned an invalid JSON response.");
+    }
+
+    if (currentRequest.onSuccess) currentRequest.onSuccess(data);
+
+  } catch (error) {
+    console.error("API Error in callBackendAPI:", error);
+    if (currentRequest.onFailure) currentRequest.onFailure(error);
+  } finally {
+    activeApiRequests--;
+    isProcessingQueue = false;
+
+    // Small delay (300ms) to allow Google Apps Script execution context to clear
+    setTimeout(processApiQueue, 300);
+  }
 }
 
 function updateHeaderDisplays() {
