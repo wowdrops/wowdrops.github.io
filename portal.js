@@ -12,9 +12,6 @@ var activeApiRequests = 0;
 // ==========================================
 const ALLOW_MANUAL_CAN_ENTRY = false;
 const CURRENT_ENV = "Live";
-var ENABLE_PHONEPE_GATEWAY = false; // "True" only for dev testing
-const PAYMENT_GATEWAY_UPIID = "cpnawin-5@okaxis";
-const PAYMENT_GATEWAY_PAYEENAME = "WOW DROPS FOOD AND BEVERAGES";
 const DEFAULTERS_DASHBOARD_COUNT = 10;
 const CONFIRMATION_STYLE = 'toggle';
 
@@ -1106,125 +1103,6 @@ function confirmScreenshotDeletion(encodedUrl) {
   }
 }
 
-// ==========================================
-// UPI MODAL & UTILS
-// ==========================================
-function openPaymentPopup(type = 'total') {
-  if (!activeUserSession) return;
-
-  var prevSum = (activeUserSession.older || 0) + (activeUserSession.lastMon || 0);
-  
-  // Wrapped all values in formatCurrency() to prevent crazy decimals
-  document.getElementById('split-older').innerText = "₹" + formatCurrency(activeUserSession.older);
-  document.getElementById('split-last').innerText = "₹" + formatCurrency(activeUserSession.lastMon);
-  document.getElementById('split-previous').innerText = "₹" + formatCurrency(prevSum);
-  document.getElementById('split-curr').innerText = "₹" + formatCurrency(activeUserSession.currentMon);
-  document.getElementById('split-total').innerText = "₹" + formatCurrency(activeUserSession.outstanding);
-
-  var radioToSelect = document.querySelector('input[value="' + type + '"]');
-  if (radioToSelect) {
-    radioToSelect.checked = true;
-    updatePayInput(radioToSelect);
-  } else {
-    document.querySelector('input[value="total"]').checked = true;
-    document.getElementById('pay-custom-amt').value = formatCurrency(activeUserSession.outstanding);
-  }
-
-  document.getElementById('payment-modal').classList.remove('hidden');
-}
-
-function updatePayInput(radio) {
-  var val = 0;
-  switch (radio.value) {
-    case 'older': val = activeUserSession.older || 0; break;
-    case 'lastMon': val = activeUserSession.lastMon || 0; break;
-    case 'previous': val = (activeUserSession.older || 0) + (activeUserSession.lastMon || 0); break;
-    case 'currentMon': val = activeUserSession.currentMon || 0; break;
-    case 'total': val = activeUserSession.outstanding || 0; break;
-  }
-  document.getElementById('pay-custom-amt').value = formatCurrency(val);
-}
-
-function closePaymentPopup() {
-  document.getElementById('payment-modal').classList.add('hidden');
-  if (window.originalPaymentHtml) {
-    setTimeout(function () { document.querySelector('#payment-modal .p-6').innerHTML = window.originalPaymentHtml; }, 300);
-  }
-}
-
-// ==========================================
-// PAYMENT GATEWAY ROUTING
-// ==========================================
-function triggerUPIPayment() {
-  if (ENABLE_PHONEPE_GATEWAY) {
-    executePhonePeFlow();
-  } else {
-    executeStandardUPIFlow();
-  }
-}
-
-function executePhonePeFlow() {
-  var amt = parseFloat(document.getElementById('pay-custom-amt').value);
-  if (isNaN(amt) || amt <= 0) return alert("Please enter a valid amount greater than 0.");
-
-  var btn = document.querySelector('#payment-modal button.bg-emerald-500');
-  var originalText = btn.innerHTML;
-
-  btn.innerHTML = "<span class='animate-pulse'>Generating Secure Link...</span>";
-  btn.disabled = true;
-  btn.classList.replace("bg-emerald-500", "bg-slate-400");
-
-  callBackendAPI("initiatePhonePePayment", { cpn: activeUserSession.cpn, amount: amt },
-    function (res) {
-      if (res.success) {
-        btn.innerHTML = "Redirecting to PhonePe...";
-        window.open(res.checkoutUrl, '_top');
-      } else {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        btn.classList.replace("bg-slate-400", "bg-emerald-500");
-        alert("Payment Gateway Failed: " + res.message);
-      }
-    },
-    function (err) {
-      btn.innerHTML = originalText;
-      btn.disabled = false;
-      btn.classList.replace("bg-slate-400", "bg-emerald-500");
-      alert("Network Error: Could not connect to gateway.");
-    }
-  );
-}
-
-function executeStandardUPIFlow() {
-  var amt = parseFloat(document.getElementById('pay-custom-amt').value);
-  if (isNaN(amt) || amt <= 0) return alert("Please enter a valid amount greater than 0.");
-
-  var tempInput = document.createElement("input");
-  tempInput.value = PAYMENT_GATEWAY_UPIID;
-  document.body.appendChild(tempInput);
-  tempInput.select();
-  try { document.execCommand("copy"); } catch (e) { }
-  document.body.removeChild(tempInput);
-
-  var btn = document.querySelector('#payment-modal button.bg-emerald-500');
-  var originalText = "";
-  if (btn) {
-    originalText = btn.innerHTML;
-    btn.innerHTML = "UPI ID Copied! Select your App...";
-    btn.classList.replace("bg-emerald-500", "bg-indigo-600");
-  }
-
-  window.location.href = "upi://pay";
-
-  setTimeout(function () {
-    if (btn) {
-      btn.innerHTML = originalText;
-      btn.classList.replace("bg-indigo-600", "bg-emerald-500");
-    }
-    closePaymentPopup();
-  }, 2500);
-}
-
 function switchView(viewId) {
   ['view-login', 'view-new-password', 'view-forgot-password', 'view-profile', 'view-dashboard', 'view-sales-history', 'view-payment-history', 'view-screenshots'].forEach(function (id) {
     document.getElementById(id).classList.add('hidden');
@@ -1285,49 +1163,4 @@ function loadActivityLogLazy() {
           activityContainer.classList.add('hidden');
       }, 300);
   }
-}
-
-function showInlinePaymentMessage(isSuccess, amount, txnId, customMessage) {
-    var banner = document.getElementById('payment-status-banner');
-    if (!banner) return;
-
-    // Get current time formatted cleanly (e.g., "08:45 AM")
-    var timeNow = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-    
-    // Set colors based on success or failure
-    var bgColor = isSuccess ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800';
-    var iconColor = isSuccess ? 'text-emerald-500' : 'text-red-500';
-    
-    // SVG Icons (Checkmark for success, X for failure)
-    var iconSvg = isSuccess 
-        ? '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
-        : '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
-    
-    var title = isSuccess ? 'Payment Successful' : 'Payment Failed';
-    var amtDisplay = amount ? `₹${amount}` : 'N/A';
-    var txnDisplay = txnId || 'N/A';
-
-    var html = `
-        <div class="${bgColor} p-4 rounded-xl border shadow-sm relative fade-in">
-            <button onclick="this.parentElement.style.display='none'" class="absolute top-2 right-2 text-slate-400 hover:text-slate-600 transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-            <div class="flex items-start space-x-3">
-                <div class="shrink-0 mt-0.5 ${iconColor}">${iconSvg}</div>
-                <div class="flex-1">
-                    <h4 class="text-sm font-black uppercase tracking-wide">${title}</h4>
-                    <p class="text-xs font-medium mt-1">${customMessage}</p>
-                    <div class="mt-3 bg-white/50 rounded-lg p-2.5 border border-black/5 flex flex-col gap-1.5 text-[10px] font-bold text-slate-600">
-                        <div class="flex justify-between border-b border-black/5 pb-1"><span>Amount:</span> <span class="text-black font-black">${amtDisplay}</span></div>
-                        <div class="flex justify-between border-b border-black/5 pb-1"><span>Transaction ID:</span> <span class="text-black">${txnDisplay}</span></div>
-                        <div class="flex justify-between"><span>Time:</span> <span class="text-black">${timeNow}</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    banner.innerHTML = html;
-    banner.classList.remove('hidden');
-    banner.style.display = 'block'; // Resets display in case user clicked the close button previously
 }
