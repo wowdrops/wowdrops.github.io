@@ -20,19 +20,30 @@ function checkForPaymentRedirect() {
       function(res) {
         document.getElementById('payment-verify-overlay').remove();
 
+        // Safely extract the amount from the backend message string if it exists
+        var amtMatch = res.message ? res.message.match(/₹([0-9.,]+)/) : null;
+        var amountExtracted = amtMatch ? amtMatch[1] : null;
+
         if (res.success) {
-          alert("✅ " + res.message);
+          // Success Banner
+          showInlinePaymentMessage(true, amountExtracted, txnId, res.message);
+          
           // Refresh the dashboard so the new outstanding balance shows!
           if (activeUserSession) refreshCustomerSessionData(activeUserSession.cpn);
+          
         } else if (res.status === 'PENDING') {
-          alert("⏳ Payment is still pending. It will be updated automatically once cleared.");
+          // Pending Banner (Shown as success styling so they don't panic, but with pending context)
+          showInlinePaymentMessage(true, amountExtracted, txnId, "⏳ Payment is still pending. It will be updated automatically once cleared.");
+          
         } else {
-          alert("❌ Payment Failed or Cancelled. Please try again.");
+          // Failure Banner
+          showInlinePaymentMessage(false, amountExtracted, txnId, "Payment Failed or Cancelled. Please try again. " + (res.message || ""));
         }
       },
       function(err) {
         document.getElementById('payment-verify-overlay').remove();
-        alert("Network error while verifying payment. We will verify it in the background.");
+        // Network Error Banner
+        showInlinePaymentMessage(false, null, txnId, "Network error while verifying payment. We will verify it securely in the background.");
       }
     );
   }

@@ -1253,18 +1253,20 @@ function loadActivityLogLazy() {
   var toggleIcon = document.getElementById('icon-toggle-activity');
   var toggleText = document.getElementById('text-toggle-activity');
   
-  // Check if it is currently closed by looking at the inline style
-  if (activityContainer.style.maxHeight === '0px') {
+  // Guaranteed check: is the container hidden?
+  if (activityContainer.classList.contains('hidden')) {
       
       toggleIcon.classList.add('rotate-180');
       toggleText.innerText = "FETCHING DATA...";
       
-      // Fade in
-      activityContainer.classList.remove('opacity-0');
-      activityContainer.classList.add('opacity-100');
+      // 1. Remove display: none so the container exists on screen
+      activityContainer.classList.remove('hidden');
       
-      // Expand smoothly by setting a high max-height directly in CSS
-      activityContainer.style.maxHeight = '2000px';
+      // 2. Trigger the fade-in a split second later
+      setTimeout(() => {
+          activityContainer.classList.remove('opacity-0');
+          activityContainer.classList.add('opacity-100');
+      }, 50);
       
       fetchDashboardActivity();
       
@@ -1273,10 +1275,59 @@ function loadActivityLogLazy() {
       }, 800);
 
   } else {
-      // If closing, collapse it and fade out
+      // Fade out
       activityContainer.classList.remove('opacity-100');
       activityContainer.classList.add('opacity-0');
-      activityContainer.style.maxHeight = '0px';
       toggleIcon.classList.remove('rotate-180');
+      
+      // Wait for fade to finish before hiding completely
+      setTimeout(() => {
+          activityContainer.classList.add('hidden');
+      }, 300);
   }
+}
+
+function showInlinePaymentMessage(isSuccess, amount, txnId, customMessage) {
+    var banner = document.getElementById('payment-status-banner');
+    if (!banner) return;
+
+    // Get current time formatted cleanly (e.g., "08:45 AM")
+    var timeNow = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    
+    // Set colors based on success or failure
+    var bgColor = isSuccess ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800';
+    var iconColor = isSuccess ? 'text-emerald-500' : 'text-red-500';
+    
+    // SVG Icons (Checkmark for success, X for failure)
+    var iconSvg = isSuccess 
+        ? '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+        : '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+    
+    var title = isSuccess ? 'Payment Successful' : 'Payment Failed';
+    var amtDisplay = amount ? `₹${amount}` : 'N/A';
+    var txnDisplay = txnId || 'N/A';
+
+    var html = `
+        <div class="${bgColor} p-4 rounded-xl border shadow-sm relative fade-in">
+            <button onclick="this.parentElement.style.display='none'" class="absolute top-2 right-2 text-slate-400 hover:text-slate-600 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="flex items-start space-x-3">
+                <div class="shrink-0 mt-0.5 ${iconColor}">${iconSvg}</div>
+                <div class="flex-1">
+                    <h4 class="text-sm font-black uppercase tracking-wide">${title}</h4>
+                    <p class="text-xs font-medium mt-1">${customMessage}</p>
+                    <div class="mt-3 bg-white/50 rounded-lg p-2.5 border border-black/5 flex flex-col gap-1.5 text-[10px] font-bold text-slate-600">
+                        <div class="flex justify-between border-b border-black/5 pb-1"><span>Amount:</span> <span class="text-black font-black">${amtDisplay}</span></div>
+                        <div class="flex justify-between border-b border-black/5 pb-1"><span>Transaction ID:</span> <span class="text-black">${txnDisplay}</span></div>
+                        <div class="flex justify-between"><span>Time:</span> <span class="text-black">${timeNow}</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    banner.innerHTML = html;
+    banner.classList.remove('hidden');
+    banner.style.display = 'block'; // Resets display in case user clicked the close button previously
 }
