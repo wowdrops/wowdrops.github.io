@@ -1247,15 +1247,36 @@ window.addEventListener('click', function (event) {
 });
 
 function loadActivityLogLazy() {
-  if (isServerBusy()) return; // Prevents clicking during initial load
+  if (isServerBusy()) return; 
   
   var activityContainer = document.getElementById('recent-activity-container');
+  var toggleIcon = document.getElementById('icon-toggle-activity');
+  var toggleText = document.getElementById('text-toggle-activity');
   
-  // Toggle visibility of the container
-  activityContainer.classList.toggle('hidden');
-  
-  // If we just opened it, fetch the data
-  if (!activityContainer.classList.contains('hidden')) {
+  // Check if it is currently closed by looking at the inline style
+  if (activityContainer.style.maxHeight === '0px') {
+      
+      toggleIcon.classList.add('rotate-180');
+      toggleText.innerText = "FETCHING DATA...";
+      
+      // Fade in
+      activityContainer.classList.remove('opacity-0');
+      activityContainer.classList.add('opacity-100');
+      
+      // Expand smoothly by setting a high max-height directly in CSS
+      activityContainer.style.maxHeight = '2000px';
+      
       fetchDashboardActivity();
+      
+      setTimeout(() => {
+          toggleText.innerText = "RECENT ACTIVITY LOG";
+      }, 800);
+
+  } else {
+      // If closing, collapse it and fade out
+      activityContainer.classList.remove('opacity-100');
+      activityContainer.classList.add('opacity-0');
+      activityContainer.style.maxHeight = '0px';
+      toggleIcon.classList.remove('rotate-180');
   }
 }

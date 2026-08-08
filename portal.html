@@ -404,158 +404,178 @@
           </div>
         </div>
 
-        <h6
-          class="font-extrabold text-slate-800 text-sm mt-8 mb-3 uppercase tracking-wide px-1 border-b border-slate-200 pb-2">
-          Recent Activity Log</h6>
-        <button onclick="loadActivityLogLazy()" class="...">
-          ▼ View Recent Activity
-        </button>
-        <div id="recent-activity-container" class="hidden">
-          <div class="space-y-3">
-            <!-- PENDING ORDER WIDGET -->
-            <div id="widget-pending-order"
-              class="bg-white rounded-2xl p-4 shadow-sm border border-indigo-200 relative overflow-hidden">
-              <div class="absolute top-0 right-0 w-2 h-full bg-indigo-400"></div>
-              <div class="flex justify-between items-center mb-2 border-b border-slate-50 pb-2">
-                <h5 class="text-xs font-black text-indigo-700 uppercase tracking-widest flex items-center gap-1.5">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                  PENDING ORDER
-                </h5>
-                <span id="po-date" class="text-[10px] font-bold text-slate-400 uppercase">--</span>
-              </div>
-              <div id="po-details" class="hidden">
-                <div class="flex justify-between mt-1 items-end pr-2">
-                  <div class="flex flex-col">
-                    <span class="text-[10px] font-bold text-slate-500 uppercase">Cans Ordered</span>
-                    <span id="po-cans" class="text-2xl font-black text-slate-800">0</span>
-                  </div>
-                  <div class="flex flex-col text-right">
-                    <span class="text-[10px] font-bold text-slate-500 uppercase">Empties Ready</span>
-                    <span id="po-empties" class="text-2xl font-black text-slate-800">0</span>
-                  </div>
-                </div>
-                <div class="mt-2 text-[10px] font-bold text-indigo-600 bg-indigo-50 p-1.5 rounded-md inline-block">
-                  Awaiting Delivery</div>
-              </div>
-              <div id="po-empty-msg" class="hidden py-2">
-                <p id="po-empty-msg-p" class="text-xs font-medium text-slate-500">No pending orders currently.</p>
-              </div>
+        <div class="mt-8 mb-2">
+          <button id="btn-toggle-activity" onclick="loadActivityLogLazy()"
+            class="w-full flex items-center justify-between bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-600 px-4 py-3.5 rounded-xl transition-all duration-200 group active:scale-[0.99]">
+
+            <div class="flex items-center space-x-2">
+              <!-- Subtle history icon -->
+              <svg class="w-4 h-4 text-slate-400 group-hover:text-indigo-500 transition-colors" fill="none"
+                stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span id="text-toggle-activity"
+                class="text-[11px] font-extrabold uppercase tracking-widest text-slate-700">
+                Recent Activity Log
+              </span>
             </div>
 
-            <div id="widget-latest-delivery"
-              class="hidden bg-white rounded-2xl p-4 shadow-sm border border-slate-200 cursor-default relative overflow-hidden">
-              <div class="absolute top-0 right-0 w-2 h-full bg-sky-400"></div>
-              <div class="flex justify-between items-center mb-2 border-b border-slate-50 pb-2">
-                <h5 class="text-xs font-black text-sky-600 uppercase tracking-widest flex items-center gap-1">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                      d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
-                  </svg>
-                  LATEST DELIVERY
-                </h5>
-                <span id="ld-date" class="text-[10px] font-bold text-slate-400 uppercase">--</span>
-              </div>
-              <div class="flex gap-4 items-center">
-                <div id="ld-thumb"
-                  class="shrink-0 w-16 h-20 rounded-lg overflow-hidden border border-slate-200 bg-slate-50"></div>
-                <div class="flex-1 flex flex-col">
-                  <div class="flex justify-between text-xs font-bold text-slate-700">
-                    <span>Delivered: <span id="ld-actd" class="text-sky-600">0</span></span>
-                    <span>Empties: <span id="ld-acte" class="text-sky-600">0</span></span>
+            <!-- Chevron arrow that will rotate -->
+            <svg id="icon-toggle-activity" class="w-5 h-5 text-slate-400 transform transition-transform duration-300"
+              fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+            </svg>
+
+          </button>
+        </div>
+        <div id="recent-activity-container" class="overflow-hidden transition-all duration-500 ease-in-out opacity-0" style="max-height: 0px;">
+          <div class="pt-3"> <!-- Added pt-3 to give a little spacing when it opens -->
+            <div class="space-y-3">
+              <!-- PENDING ORDER WIDGET -->
+              <div id="widget-pending-order"
+                class="bg-white rounded-2xl p-4 shadow-sm border border-indigo-200 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-2 h-full bg-indigo-400"></div>
+                <div class="flex justify-between items-center mb-2 border-b border-slate-50 pb-2">
+                  <h5 class="text-xs font-black text-indigo-700 uppercase tracking-widest flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    PENDING ORDER
+                  </h5>
+                  <span id="po-date" class="text-[10px] font-bold text-slate-400 uppercase">--</span>
+                </div>
+                <div id="po-details" class="hidden">
+                  <div class="flex justify-between mt-1 items-end pr-2">
+                    <div class="flex flex-col">
+                      <span class="text-[10px] font-bold text-slate-500 uppercase">Cans Ordered</span>
+                      <span id="po-cans" class="text-2xl font-black text-slate-800">0</span>
+                    </div>
+                    <div class="flex flex-col text-right">
+                      <span class="text-[10px] font-bold text-slate-500 uppercase">Empties Ready</span>
+                      <span id="po-empties" class="text-2xl font-black text-slate-800">0</span>
+                    </div>
                   </div>
-                  <div class="mt-2 pt-2 border-t border-slate-100 flex justify-between items-end">
-                    <span class="text-[9px] font-bold text-slate-400 uppercase">Billed Amt</span>
-                    <span id="ld-amt" class="text-lg font-black text-slate-800">₹0</span>
-                  </div>
+                  <div class="mt-2 text-[10px] font-bold text-indigo-600 bg-indigo-50 p-1.5 rounded-md inline-block">
+                    Awaiting Delivery</div>
+                </div>
+                <div id="po-empty-msg" class="hidden py-2">
+                  <p id="po-empty-msg-p" class="text-xs font-medium text-slate-500">No pending orders currently.</p>
                 </div>
               </div>
-              <p
-                class="text-[10px] font-bold text-slate-500 mt-3 bg-slate-50 p-2 rounded-lg text-center border border-slate-100">
-                Note: This recent delivery is not yet reflected in your pending dues.</p>
-            </div>
 
-            <div
-              class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 cursor-pointer hover:border-indigo-300 transition group relative"
-              onclick="openSalesHistory()">
-              <div class="flex justify-between items-center mb-1">
-                <h5 class="text-xs font-black text-indigo-600 uppercase tracking-widest flex items-center gap-1">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                      d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-                  </svg>
-                  SALES
-                </h5>
-                <svg class="w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition" fill="none"
-                  stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                </svg>
-              </div>
-              <div id="widget-sales">
-                <div class="animate-pulse flex space-x-4 mt-2">
-                  <div class="flex-1 space-y-2 py-1">
-                    <div class="h-2 bg-slate-200 rounded w-3/4"></div>
-                    <div class="h-2 bg-slate-200 rounded w-1/2"></div>
+              <div id="widget-latest-delivery"
+                class="hidden bg-white rounded-2xl p-4 shadow-sm border border-slate-200 cursor-default relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-2 h-full bg-sky-400"></div>
+                <div class="flex justify-between items-center mb-2 border-b border-slate-50 pb-2">
+                  <h5 class="text-xs font-black text-sky-600 uppercase tracking-widest flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                        d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                    </svg>
+                    LATEST DELIVERY
+                  </h5>
+                  <span id="ld-date" class="text-[10px] font-bold text-slate-400 uppercase">--</span>
+                </div>
+                <div class="flex gap-4 items-center">
+                  <div id="ld-thumb"
+                    class="shrink-0 w-16 h-20 rounded-lg overflow-hidden border border-slate-200 bg-slate-50"></div>
+                  <div class="flex-1 flex flex-col">
+                    <div class="flex justify-between text-xs font-bold text-slate-700">
+                      <span>Delivered: <span id="ld-actd" class="text-sky-600">0</span></span>
+                      <span>Empties: <span id="ld-acte" class="text-sky-600">0</span></span>
+                    </div>
+                    <div class="mt-2 pt-2 border-t border-slate-100 flex justify-between items-end">
+                      <span class="text-[9px] font-bold text-slate-400 uppercase">Billed Amt</span>
+                      <span id="ld-amt" class="text-lg font-black text-slate-800">₹0</span>
+                    </div>
                   </div>
                 </div>
+                <p
+                  class="text-[10px] font-bold text-slate-500 mt-3 bg-slate-50 p-2 rounded-lg text-center border border-slate-100">
+                  Note: This recent delivery is not yet reflected in your pending dues.</p>
               </div>
-            </div>
 
-            <div
-              class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 cursor-pointer hover:border-emerald-300 transition group"
-              onclick="openPaymentHistory()">
-              <div class="flex justify-between items-center mb-1">
-                <h5 class="text-xs font-black text-emerald-600 uppercase tracking-widest flex items-center gap-1">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              <div
+                class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 cursor-pointer hover:border-indigo-300 transition group relative"
+                onclick="openSalesHistory()">
+                <div class="flex justify-between items-center mb-1">
+                  <h5 class="text-xs font-black text-indigo-600 uppercase tracking-widest flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                    </svg>
+                    SALES
+                  </h5>
+                  <svg class="w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                   </svg>
-                  PAYMENT
-                </h5>
-                <svg class="w-4 h-4 text-slate-300 group-hover:text-emerald-500 transition" fill="none"
-                  stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                </svg>
-              </div>
-              <div id="widget-pays">
-                <div class="animate-pulse flex space-x-4 mt-2">
-                  <div class="flex-1 space-y-2 py-1">
-                    <div class="h-2 bg-slate-200 rounded w-3/4"></div>
-                    <div class="h-2 bg-slate-200 rounded w-1/2"></div>
+                </div>
+                <div id="widget-sales">
+                  <div class="animate-pulse flex space-x-4 mt-2">
+                    <div class="flex-1 space-y-2 py-1">
+                      <div class="h-2 bg-slate-200 rounded w-3/4"></div>
+                      <div class="h-2 bg-slate-200 rounded w-1/2"></div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div
-              class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 cursor-pointer hover:border-amber-300 transition group"
-              onclick="openScreenshots()">
-              <div class="flex justify-between items-center mb-1">
-                <h5 class="text-xs font-black text-amber-600 uppercase tracking-widest flex items-center gap-1">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
-                    </path>
+              <div
+                class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 cursor-pointer hover:border-emerald-300 transition group"
+                onclick="openPaymentHistory()">
+                <div class="flex justify-between items-center mb-1">
+                  <h5 class="text-xs font-black text-emerald-600 uppercase tracking-widest flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    PAYMENT
+                  </h5>
+                  <svg class="w-4 h-4 text-slate-300 group-hover:text-emerald-500 transition" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                   </svg>
-                  PAYMENT SCREENSHOT
-                </h5>
-                <svg class="w-4 h-4 text-slate-300 group-hover:text-amber-500 transition" fill="none"
-                  stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                </svg>
+                </div>
+                <div id="widget-pays">
+                  <div class="animate-pulse flex space-x-4 mt-2">
+                    <div class="flex-1 space-y-2 py-1">
+                      <div class="h-2 bg-slate-200 rounded w-3/4"></div>
+                      <div class="h-2 bg-slate-200 rounded w-1/2"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div id="widget-ss2">
-                <div class="animate-pulse flex space-x-4 mt-2">
-                  <div class="flex-1 space-y-2 py-1">
-                    <div class="h-2 bg-slate-200 rounded w-3/4"></div>
-                    <div class="h-2 bg-slate-200 rounded w-1/2"></div>
+
+              <div
+                class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 cursor-pointer hover:border-amber-300 transition group"
+                onclick="openScreenshots()">
+                <div class="flex justify-between items-center mb-1">
+                  <h5 class="text-xs font-black text-amber-600 uppercase tracking-widest flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                      </path>
+                    </svg>
+                    PAYMENT SCREENSHOT
+                  </h5>
+                  <svg class="w-4 h-4 text-slate-300 group-hover:text-amber-500 transition" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                  </svg>
+                </div>
+                <div id="widget-ss2">
+                  <div class="animate-pulse flex space-x-4 mt-2">
+                    <div class="flex-1 space-y-2 py-1">
+                      <div class="h-2 bg-slate-200 rounded w-3/4"></div>
+                      <div class="h-2 bg-slate-200 rounded w-1/2"></div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-
           </div>
         </div>
 
