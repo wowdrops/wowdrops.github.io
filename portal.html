@@ -350,7 +350,13 @@
                 Order</button>
             </div>
           </div>
-
+          <!-- PENDING ORDER NOTIFICATION BANNER -->
+            <div id="pending-alert-banner" class="hidden bg-amber-50 border-l-4 border-amber-500 p-3 rounded-r-xl shadow-sm mb-4">
+              <div class="flex items-start">
+                <svg class="w-5 h-5 text-amber-500 mr-2 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <p class="text-xs font-bold text-amber-900 leading-snug">You currently have a pending order. You may modify it below.</p>
+              </div>
+            </div>
           <div id="order-input-section" class="space-y-5">
             <div class="grid grid-cols-2 gap-4 relative">
               <div>
@@ -399,6 +405,17 @@
                 class="flex-1 w-full bg-indigo-600 text-white font-black py-3 rounded-xl shadow-md hover:bg-indigo-700 transition-all duration-150 active:scale-95 active:shadow-sm text-sm">Submit
                 Request</button>
             </div>
+            
+            <!-- NEW: REPLACEMENT BADGE & TRIGGER -->
+            <div id="replacement-badge" class="hidden bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 mt-4 justify-between items-center shadow-sm">
+               <span id="replacement-badge-text" class="text-[11px] font-black text-emerald-800 uppercase tracking-wide"></span>
+               <button type="button" onclick="openReplacementModal()" class="text-emerald-600 hover:text-emerald-800 font-bold text-[10px] uppercase tracking-widest bg-emerald-100 px-2 py-1 rounded transition">Edit</button>
+            </div>
+
+            <div class="text-center mt-3 border-t border-slate-100 pt-3">
+               <a href="javascript:void(0)" onclick="openReplacementModal()" class="text-[10px] font-bold text-slate-400 hover:text-rose-500 underline decoration-slate-200 underline-offset-4 transition">Report an issue / Request free replacement</a>
+            </div>
+            <!-- --------------------------------- -->
 
             <p id="order-msg" class="text-center text-sm font-bold hidden"></p>
             <div id="supply-limit-banner" class="mt-3 hidden"></div>
@@ -883,6 +900,49 @@
         & Cancel</button>
     </div>
   </div>
+  <!-- REPLACEMENT MODAL (+/- VERSION) -->
+    <div id="replacement-modal" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 fade-in">
+      <div class="bg-white w-full max-w-sm rounded-[24px] shadow-2xl overflow-hidden relative">
+        <button onclick="closeReplacementModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 outline-none">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <div class="p-6">
+          <div class="flex items-center gap-3 mb-5">
+             <div class="w-10 h-10 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center shrink-0">
+               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+             </div>
+             <div>
+               <h3 class="font-black text-lg text-slate-800 leading-tight">Request Replacement</h3>
+               <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Free of charge</p>
+             </div>
+          </div>
+          
+          <div class="space-y-5">
+             <div>
+               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5 ml-1">Number of cans to replace</label>
+               <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl p-1">
+                  <button type="button" onclick="adjustReplacementValue(-1)" class="w-10 h-10 flex items-center justify-center bg-white rounded-lg text-slate-700 font-extrabold text-xl shadow-sm active:scale-95 transition outline-none">-</button>
+                  <input type="number" id="input-replace-qty" min="0" value="0" disabled class="w-full bg-transparent text-center font-black text-2xl text-slate-800 outline-none">
+                  <button type="button" onclick="adjustReplacementValue(1)" class="w-10 h-10 flex items-center justify-center bg-white rounded-lg text-slate-700 font-extrabold text-xl shadow-sm active:scale-95 transition outline-none">+</button>
+                </div>
+             </div>
+             <div>
+               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5 ml-1">Reason for replacement</label>
+               <select id="input-replace-reason" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none transition font-bold text-sm text-slate-700 appearance-none">
+                 <option value="">-- Select Reason --</option>
+                 <option value="Water problem">Water Quality / Impurities</option>
+                 <option value="Leakage">Can Leakage</option>
+                 <option value="NVJ">Non-Validity Jar (NVJ/Expired)</option>
+               </select>
+             </div>
+          </div>
+          
+          <button onclick="saveReplacementToOrder()" class="w-full mt-6 bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-xl shadow-lg active:scale-[0.98] transition uppercase tracking-widest text-sm">
+            Attach to Order
+          </button>
+        </div>
+      </div>
+    </div>
 
   <!-- Link to external JS -->
   <script src="portal.js?v=" defer></script>

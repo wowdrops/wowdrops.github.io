@@ -216,7 +216,12 @@ function cancelEditMode() {
     document.getElementById('input-ord-d').value = activeUserSession.existingOrdD || 1;
     document.getElementById('input-ord-e').value = activeUserSession.existingOrdE || 1;
   }
+  
+  window.pendingReplaceQty = null;
+  window.pendingReplaceReason = null;
+  
   toggleOrderEditMode(false);
+  renderOrderWidget(); 
 }
 
 // ==========================================
@@ -560,74 +565,7 @@ function showDashboardSkeletons() {
   submitBtn.innerHTML = "<span class='animate-pulse'>Fetching Live Status...</span>";
 }
 
-/*
-function refreshCustomerSessionData(cpn) {
-  if (!activeUserSession.rowCache) activeUserSession.rowCache = { ord: null, out: null, db: null };
 
-  // 1. Fetch Order Data FIRST
-  callBackendAPI("getQuickOrderData", { cpn: cpn, cachedOrdRow: activeUserSession.rowCache.ord },
-    function (fastData) {
-      activeUserSession.uniqueNo = fastData.existingOrder.uniqueNo; 
-      activeUserSession.rowCache.ord = fastData.existingOrder.rowNo;
-      activeUserSession.existingOrdD = fastData.existingOrder.ordD;
-      activeUserSession.existingOrdE = fastData.existingOrder.ordE;
-      activeUserSession.rate = fastData.existingOrder.rate;
-      activeUserSession.ordDate = fastData.existingOrder.ordDate;
-      activeUserSession.hasExistingOrder = fastData.existingOrder.isExisting;
-      activeUserSession.supplyConfig = fastData.supplyConfig;
-
-      var submitBtn = document.getElementById('btn-submit-order');
-      submitBtn.disabled = false;
-      submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-      submitBtn.innerHTML = "<span>Submit Request</span>";
-
-      renderOrderWidget();
-
-      // 2. Fetch Ledger Data SECOND
-      callBackendAPI("getFinancialLedgerData", { cpn: cpn, cachedOutRow: activeUserSession.rowCache.out, cachedDbRow: activeUserSession.rowCache.db },
-          function(ledgerData) {
-              if (ledgerData.status === 'INACTIVE') {
-                  localStorage.removeItem('wowdrops_customer_session');
-                  activeUserSession = null;
-                  switchView('view-login');
-                  var loginErr = document.getElementById('login-err');
-                  loginErr.innerText = "Your status is changed to inactive. Please contact wowdrops";
-                  loginErr.classList.remove('hidden');
-                  return; 
-              }
-
-          activeUserSession.rowCache.out = ledgerData.outRowNo;
-          activeUserSession.rowCache.db = ledgerData.dbRowNo;
-
-          activeUserSession.outstanding = ledgerData.outstanding;
-          activeUserSession.currentMon = ledgerData.currentMon;
-          activeUserSession.lastMon = ledgerData.lastMon;
-          activeUserSession.older = ledgerData.older;
-          activeUserSession.cansWithCustomer = ledgerData.cansWithCustomer;
-          activeUserSession.advance = ledgerData.advance;
-          activeUserSession.maxClientD = ledgerData.maxClientD;
-          activeUserSession.maxClientE = ledgerData.maxClientE;
-
-          activeUserSession.email = ledgerData.email;
-          activeUserSession.whatsapp = ledgerData.whatsapp;
-          activeUserSession.defaultRate = ledgerData.defaultRate;
-
-          localStorage.setItem('wowdrops_customer_session', JSON.stringify(activeUserSession));
-
-          document.getElementById('dash-skel').classList.add('hidden');
-          renderFinancialWidget();
-
-          checkEmailCollection();
-          
-          // DO NOT CALL fetchDashboardActivity() HERE ANYMORE!
-        }
-      );
-    }
-  );
-
-  setTimeout(function () { window.scrollTo(0, 1); window.scrollTo(0, 0); }, 300);
-}
-*/
 
 // 1. Helper to wrap your existing callback API into a modern Promise
 const callBackendAsync = (action, payload) => {
@@ -655,6 +593,11 @@ async function refreshCustomerSessionData(cpn) {
     activeUserSession.ordDate = fastData.existingOrder.ordDate;
     activeUserSession.hasExistingOrder = fastData.existingOrder.isExisting;
     activeUserSession.supplyConfig = fastData.supplyConfig;
+    // --- NEW DATA MEMORY ---
+    activeUserSession.status = fastData.existingOrder.status;
+    activeUserSession.pendingQty = fastData.existingOrder.pendingQty;
+    activeUserSession.replaceQty = fastData.existingOrder.replaceQty;
+    activeUserSession.replaceReason = fastData.existingOrder.replaceReason;
 
     var submitBtn = document.getElementById('btn-submit-order');
     submitBtn.disabled = false;
@@ -711,6 +654,27 @@ async function refreshCustomerSessionData(cpn) {
 function renderOrderWidget() {
   var poDetails = document.getElementById('po-details');
   var poEmpty = document.getElementById('po-empty-msg');
+  var pendingBanner = document.getElementById('pending-alert-banner');
+  
+  if (activeUserSession.status === "PENDING") {
+    pendingBanner.classList.remove('hidden');
+  } else {
+    pendingBanner.classList.add('hidden');
+  }
+
+  var badge = document.getElementById('replacement-badge');
+  var badgeText = document.getElementById('replacement-badge-text');
+  var rQty = (window.pendingReplaceQty != null) ? window.pendingReplaceQty : (activeUserSession.replaceQty || 0);
+  var rReason = (window.pendingReplaceReason != null) ? window.pendingReplaceReason : (activeUserSession.replaceReason || "");
+  
+  if (rQty > 0) {
+    badgeText.innerText = "📦 Includes " + rQty + " Free Replacement (" + rReason + ")";
+    badge.classList.remove('hidden');
+    badge.classList.add('flex');
+  } else {
+    badge.classList.add('hidden');
+    badge.classList.remove('flex');
+  }
 
   if (activeUserSession.hasExistingOrder) {
     poDetails.classList.remove('hidden');
@@ -718,6 +682,7 @@ function renderOrderWidget() {
     document.getElementById('po-date').innerText = activeUserSession.ordDate || "recently";
     document.getElementById('po-cans').innerText = activeUserSession.existingOrdD || 0;
     document.getElementById('po-empties').innerText = activeUserSession.existingOrdE || 0;
+
     document.getElementById('input-ord-d').value = activeUserSession.existingOrdD || 1;
     document.getElementById('input-ord-e').value = activeUserSession.existingOrdE || 1;
     toggleOrderEditMode(false);
@@ -754,9 +719,11 @@ function renderFinancialWidget() {
   var monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   document.getElementById('current-month-name').innerText = monthNames[new Date().getMonth()];
 
-  var baseMaxD = (activeUserSession.maxClientD !== undefined && activeUserSession.maxClientD !== null) ? activeUserSession.maxClientD : 9999;
-  var baseMaxE = (activeUserSession.maxClientE !== undefined && activeUserSession.maxClientE !== null) ? activeUserSession.maxClientE : 9999;
+  var pendingBonus = activeUserSession.pendingQty || 0;
+  var baseMaxD = ((activeUserSession.maxClientD !== undefined && activeUserSession.maxClientD !== null) ? activeUserSession.maxClientD : 9999) + pendingBonus;
+  var baseMaxE = ((activeUserSession.maxClientE !== undefined && activeUserSession.maxClientE !== null) ? activeUserSession.maxClientE : 9999) + pendingBonus;
   var conf = activeUserSession.supplyConfig;
+
   var isGlobalConstraining = conf && conf.isOn && (conf.limitActive || conf.isSoldOut);
   var globalLimit = isGlobalConstraining ? conf.globalMax : 9999;
 
@@ -829,6 +796,10 @@ function fetchDashboardActivity() {
 function processOrderSubmission() {
   var dVal = parseInt(document.getElementById('input-ord-d').value) || 0;
   var eVal = parseInt(document.getElementById('input-ord-e').value) || 0;
+  
+  var rQty = (window.pendingReplaceQty != null) ? window.pendingReplaceQty : ((activeUserSession.hasExistingOrder) ? (activeUserSession.replaceQty || 0) : 0);
+  var rReason = (window.pendingReplaceReason != null) ? window.pendingReplaceReason : ((activeUserSession.hasExistingOrder) ? (activeUserSession.replaceReason || "") : "");
+  
   var msgEl = document.getElementById('order-msg');
 
   if (window.currentMaxOrdD !== null && dVal > window.currentMaxOrdD) { return showError(msgEl, window.limitReasonD + " " + window.currentMaxOrdD + " Can(s)."); }
@@ -841,6 +812,8 @@ function processOrderSubmission() {
     cpnno: activeUserSession.cpn, 
     ordD: dVal, 
     ordE: eVal, 
+    replaceQty: rQty,
+    replaceReason: rReason,
     olderDues: activeUserSession.older,
     uniqueNo: activeUserSession.uniqueNo,
     rowIdx: activeUserSession.rowCache ? activeUserSession.rowCache.ord : null
@@ -849,6 +822,10 @@ function processOrderSubmission() {
   callBackendAPI("submitCustomerOrder", { orderData: payload },
     function (res) {
       toggleButtonState('btn-submit-order', false, 'Submit Request');
+      
+      window.pendingReplaceQty = null;
+      window.pendingReplaceReason = null;
+
       msgEl.className = "text-center text-sm font-bold block mt-4 " + (res.success ? 'text-emerald-600' : 'text-red-500');
       msgEl.innerText = res.message;
       msgEl.classList.remove('hidden');
@@ -860,7 +837,11 @@ function processOrderSubmission() {
         activeUserSession.hasExistingOrder = true;
         activeUserSession.existingOrdD = dVal;
         activeUserSession.existingOrdE = eVal;
+        activeUserSession.replaceQty = rQty;
+        activeUserSession.replaceReason = rReason;
         activeUserSession.ordDate = "Just now";
+        
+        localStorage.setItem('wowdrops_customer_session', JSON.stringify(activeUserSession));
         
         // ⚡ SAVE THE NEW IDS RETURNED BY THE BACKEND
         if (res.uniqueNo) activeUserSession.uniqueNo = res.uniqueNo;
@@ -869,16 +850,7 @@ function processOrderSubmission() {
           activeUserSession.rowCache.ord = res.rowIdx;
         }
         
-        var poDetails = document.getElementById('po-details');
-        var poEmpty = document.getElementById('po-empty-msg');
-        if (poDetails) poDetails.classList.remove('hidden');
-        if (poEmpty) poEmpty.classList.add('hidden');
-
-        document.getElementById('po-date').innerText = "Just now";
-        document.getElementById('po-cans').innerText = dVal;
-        document.getElementById('po-empties').innerText = eVal;
-
-        toggleOrderEditMode(false);
+        renderOrderWidget();
       }
     },
     function (err) {
@@ -1163,4 +1135,59 @@ function loadActivityLogLazy() {
           activityContainer.classList.add('hidden');
       }, 300);
   }
+}
+
+// --- REPLACEMENT MODAL LOGIC ---
+function openReplacementModal() {
+  var sessionQty = (activeUserSession && activeUserSession.replaceQty) ? activeUserSession.replaceQty : 0;
+  var sessionReason = (activeUserSession && activeUserSession.replaceReason) ? activeUserSession.replaceReason : "";
+  
+  var rQty = (window.pendingReplaceQty != null) ? window.pendingReplaceQty : sessionQty;
+  var rReason = (window.pendingReplaceReason != null) ? window.pendingReplaceReason : sessionReason;
+  
+  document.getElementById('input-replace-qty').value = rQty;
+  document.getElementById('input-replace-reason').value = rReason;
+  
+  var modal = document.getElementById('replacement-modal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeReplacementModal() {
+  var modal = document.getElementById('replacement-modal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+function adjustReplacementValue(step) {
+  var field = document.getElementById('input-replace-qty');
+  var currentVal = parseInt(field.value) || 0;
+  var newVal = Math.max(0, currentVal + step);
+  
+  var maxAllowed = (activeUserSession && activeUserSession.maxClientD !== undefined && activeUserSession.maxClientD !== null) ? activeUserSession.maxClientD : 9999;
+  if (newVal > maxAllowed) newVal = maxAllowed;
+  
+  field.value = newVal;
+}
+
+function saveReplacementToOrder() {
+  var rQty = parseInt(document.getElementById('input-replace-qty').value) || 0;
+  var rReason = document.getElementById('input-replace-reason').value;
+  
+  if (rQty > 0 && rReason === "") {
+    alert("Please select a reason for the replacement.");
+    return;
+  }
+
+  var maxAllowed = (activeUserSession && activeUserSession.maxClientD !== undefined && activeUserSession.maxClientD !== null) ? activeUserSession.maxClientD : 9999;
+  if (rQty > maxAllowed) {
+     alert("You cannot replace more than your allowed personal limit of " + maxAllowed + " cans.");
+     return;
+  }
+  
+  window.pendingReplaceQty = rQty;
+  window.pendingReplaceReason = rReason;
+  
+  closeReplacementModal();
+  renderOrderWidget(); 
 }
