@@ -356,6 +356,17 @@ function adjustValue(inputId, step) {
   if (inputId === 'input-ord-e') syncCans(newVal);
 }
 
+function quickAddCans(qty) {
+  if (window.currentMaxOrdE === null) return;
+  
+  // Safety check: Prevents overriding max limits
+  var finalQty = Math.min(qty, window.currentMaxOrdE);
+  
+  var fieldE = document.getElementById('input-ord-e');
+  fieldE.value = finalQty;
+  syncCans(finalQty);
+}
+
 // ==========================================
 // AUTHENTICATION & PROFILE
 // ==========================================
@@ -683,6 +694,20 @@ function renderOrderWidget() {
     document.getElementById('po-cans').innerText = activeUserSession.existingOrdD || 0;
     document.getElementById('po-empties').innerText = activeUserSession.existingOrdE || 0;
 
+    // --- NEW: SHOW REPLACEMENT IN PENDING WIDGET ---
+    var poRepContainer = document.getElementById('po-rep-container');
+    var poRepText = document.getElementById('po-rep-text');
+    var sReqQty = activeUserSession.replaceQty || 0;
+    var sReqRsn = activeUserSession.replaceReason || "";
+
+    if (sReqQty > 0 && poRepContainer && poRepText) {
+      poRepText.innerText = sReqQty + " Replacement(s) (" + sReqRsn + ")";
+      poRepContainer.classList.remove('hidden');
+    } else if (poRepContainer) {
+      poRepContainer.classList.add('hidden');
+    }
+    // -----------------------------------------------
+
     document.getElementById('input-ord-d').value = activeUserSession.existingOrdD || 1;
     document.getElementById('input-ord-e').value = activeUserSession.existingOrdE || 1;
     toggleOrderEditMode(false);
@@ -743,52 +768,139 @@ function renderFinancialWidget() {
   }
   window.currentMaxOrdE = Math.max(activeLimitE, activeUserSession.existingOrdE || 0);
 
+  // Verify manual input bounds one final time
   var inputD = document.getElementById('input-ord-d');
   var inputE = document.getElementById('input-ord-e');
   if (parseInt(inputD.value) > window.currentMaxOrdD) inputD.value = window.currentMaxOrdD;
   if (parseInt(inputE.value) > window.currentMaxOrdE) inputE.value = window.currentMaxOrdE;
+
+  // --- NEW: DYNAMICALLY DISABLE QUICK-ADD IMAGES BASED ON CAPACITY ---
+  var btn1 = document.getElementById('btn-quick-1');
+  var btn2 = document.getElementById('btn-quick-2');
+  var btn3 = document.getElementById('btn-quick-3');
+
+  if (btn1 && btn2 && btn3) {
+    // Disable completely if sold out (Max = 0)
+    btn1.disabled = window.currentMaxOrdE < 1;
+    // Disable 2 cans if limit is 1
+    btn2.disabled = window.currentMaxOrdE < 2;
+    // Disable 3 cans if limit is 1 or 2
+    btn3.disabled = window.currentMaxOrdE < 3;
+  }
+  // -------------------------------------------------------------------
+
+
 }
 
 function fetchDashboardActivity() {
   callBackendAPI("getLatestDashboardActivity", { cpn: activeUserSession.cpn },
     function (res) {
-      var ldCard = document.getElementById('widget-latest-delivery');
-      if (res.delivery) {
-        if (res.delivery.actD > 0 || res.delivery.actE > 0) {
-          ldCard.classList.remove('hidden');
-          document.getElementById('ld-date').innerText = res.delivery.date;
-          document.getElementById('ld-actd').innerText = res.delivery.actD;
-          document.getElementById('ld-acte').innerText = res.delivery.actE;
-          document.getElementById('ld-amt').innerText = "₹" + res.delivery.amt;
-          var safeDelImg = getDriveDirectUrl(res.delivery.link);
-          var thumbHtml = res.delivery.link ? "<a href='" + res.delivery.link + "' target='_blank'><img src='" + safeDelImg + "' class='w-full h-full object-cover' onerror=\"this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-[8px] text-slate-400 font-bold p-1 text-center\\'>Image</div>'\"></a>" : "<div class='w-full h-full flex items-center justify-center text-[8px] text-slate-400 font-bold p-1 text-center'>No Photo</div>";
-          document.getElementById('ld-thumb').innerHTML = thumbHtml;
+      try {
+        var ldCard = document.getElementById('widget-latest-delivery');
+        if (res.delivery) {
+          if (!res.delivery.isOutForDelivery) {
+            // 1. Order is complete
+            if (ldCard) ldCard.classList.remove('hidden');
+            var elDate = document.getElementById('ld-date'); if (elDate) elDate.innerText = res.delivery.date;
+            var elActD = document.getElementById('ld-actd'); if (elActD) elActD.innerText = res.delivery.actD;
+            var elActE = document.getElementById('ld-acte'); if (elActE) elActE.innerText = res.delivery.actE;
+            var elAmt = document.getElementById('ld-amt'); if (elAmt) elAmt.innerText = "₹" + res.delivery.amt;
+
+            var elThumb = document.getElementById('ld-thumb');
+            if (elThumb) {
+              var safeDelImg = getDriveDirectUrl(res.delivery.link);
+              var thumbHtml = res.delivery.link ? "<a href='" + res.delivery.link + "' target='_blank'><img src='" + safeDelImg + "' class='w-full h-full object-cover' onerror=\"this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-[8px] text-slate-400 font-bold p-1 text-center\\'>Image</div>'\"></a>" : "<div class='w-full h-full flex items-center justify-center text-[8px] text-slate-400 font-bold p-1 text-center'>No Photo</div>";
+              elThumb.innerHTML = thumbHtml;
+            }
+          } else {
+            // 2. IN TRANSIT! Order is in DEL2 but not yet delivered
+            if (ldCard) ldCard.classList.add('hidden');
+
+            // Show the Pending Order Widget
+            var poDetails = document.getElementById('po-details');
+            var poEmpty = document.getElementById('po-empty-msg');
+            var pendingBanner = document.getElementById('pending-alert-banner');
+
+            if (poDetails) poDetails.classList.remove('hidden');
+            if (poEmpty) poEmpty.classList.add('hidden');
+            if (pendingBanner) pendingBanner.classList.add('hidden');
+
+            // Update the Widget Text
+            var elPoDate = document.getElementById('po-date'); if (elPoDate) elPoDate.innerText = "Today";
+            var elPoCans = document.getElementById('po-cans'); if (elPoCans) elPoCans.innerText = res.delivery.ordD;
+            var elPoEmpties = document.getElementById('po-empties'); if (elPoEmpties) elPoEmpties.innerText = res.delivery.ordE;
+
+            // Set Badge to Out For Delivery
+            var statusBadge = document.getElementById('po-status-badge');
+            if (statusBadge) {
+              statusBadge.innerText = "🚚 Out for Delivery";
+              statusBadge.className = "mt-2 text-[10px] font-bold text-amber-800 bg-amber-100 p-1.5 rounded-md inline-block shadow-sm";
+            }
+
+            // Show Replacement Info if it exists
+            var poRepContainer = document.getElementById('po-rep-container');
+            var poRepText = document.getElementById('po-rep-text');
+            if (res.delivery.replaceQty > 0 && poRepContainer && poRepText) {
+              poRepText.innerText = res.delivery.replaceQty + " Replacement(s) (" + res.delivery.replaceReason + ")";
+              poRepContainer.classList.remove('hidden');
+            }
+          }
         } else {
-          ldCard.classList.add('hidden');
-          var orderText = "Your order for " + res.delivery.ordD + " cans and " + res.delivery.ordE + " empties are processed and will arrive soon.";
-          document.getElementById('po-empty-msg-p').innerText = orderText;
-          document.getElementById('po-empty-msg').classList.remove('hidden');
+          if (ldCard) ldCard.classList.add('hidden');
         }
-      } else { ldCard.classList.add('hidden'); }
+      } catch (err) {
+        console.error("Delivery widget render error: " + err);
+      }
 
-      var sHtml = "";
-      if (res.sale) {
-        sHtml = "<div class='flex justify-between items-end mt-1'><div><div class='text-sm'><span class='font-bold text-slate-800'>" + res.sale.date + "</span></div><div class='flex gap-3 text-xs mt-1 font-medium text-slate-600'><span>Dropped: <b class='text-indigo-600'>" + res.sale.actD + "</b></span><span>Empties: <b class='text-indigo-600'>" + res.sale.actE + "</b></span></div></div><div class='font-black text-indigo-700 text-lg'>₹" + res.sale.amt + "</div></div>";
-      } else { sHtml = "<p class='text-xs text-slate-400 mt-2 font-medium'>No recent sales found.</p>"; }
-      document.getElementById('widget-sales').innerHTML = sHtml;
+      // --- GUARANTEED EXECUTION FOR BOTTOM WIDGETS ---
+      try {
+        var sHtml = "";
+        if (res.sale) {
+          sHtml = "<div class='flex justify-between items-end mt-1'>" +
+            "<div>" +
+            "<div class='text-sm'><span class='font-bold text-slate-800'>" + res.sale.date + "</span></div>" +
+            "<div class='flex gap-3 text-xs mt-1 font-medium text-slate-600'>" +
+            "<span>Dropped: <b class='text-indigo-600'>" + res.sale.actD + "</b></span>" +
+            "<span>Empties: <b class='text-indigo-600'>" + res.sale.actE + "</b></span>" +
+            "</div>" +
+            "</div>" +
+            "<div class='font-black text-indigo-700 text-lg'>₹" + res.sale.amt + "</div>" +
+            "</div>";
+        } else { sHtml = "<p class='text-xs text-slate-400 mt-2 font-medium'>No recent sales found.</p>"; }
+        var elSales = document.getElementById('widget-sales');
+        if (elSales) elSales.innerHTML = sHtml;
+      } catch (e1) { console.error("Sales widget error: " + e1); }
 
-      var pHtml = "";
-      if (res.pay) {
-        pHtml = "<div class='flex justify-between items-end mt-1'><div><div class='text-sm'><span class='font-bold text-slate-800'>" + res.pay.date + "</span></div><div class='text-xs mt-1 font-medium text-slate-500'>Payment successfully credited to ledger.</div></div><div class='font-black text-emerald-700 text-lg'>₹" + res.pay.amt + "</div></div>";
-      } else { pHtml = "<p class='text-xs text-slate-400 mt-2 font-medium'>No recent payments found.</p>"; }
-      document.getElementById('widget-pays').innerHTML = pHtml;
+      try {
+        var pHtml = "";
+        if (res.pay) {
+          pHtml = "<div class='flex justify-between items-end mt-1'>" +
+            "<div>" +
+            "<div class='text-sm'><span class='font-bold text-slate-800'>" + res.pay.date + "</span></div>" +
+            "<div class='text-xs mt-1 font-medium text-slate-500'>Payment successfully credited to ledger.</div>" +
+            "</div>" +
+            "<div class='font-black text-emerald-700 text-lg'>₹" + res.pay.amt + "</div>" +
+            "</div>";
+        } else { pHtml = "<p class='text-xs text-slate-400 mt-2 font-medium'>No recent payments found.</p>"; }
+        var elPays = document.getElementById('widget-pays');
+        if (elPays) elPays.innerHTML = pHtml;
+      } catch (e2) { console.error("Pays widget error: " + e2); }
 
-      var ssHtml = "";
-      if (res.ss2) {
-        var statusColor = String(res.ss2.bankStatus).toUpperCase() === 'CLEARED' ? 'text-emerald-600' : 'text-amber-600';
-        ssHtml = "<div class='flex justify-between items-end mt-1'><div><div class='text-xs text-slate-500'>Submitted: <span class='font-bold text-slate-800'>" + res.ss2.updatedOn + "</span></div><div class='text-xs mt-1 font-bold " + statusColor + "'>Status: " + res.ss2.bankStatus + "</div></div><div class='font-black text-amber-700 text-lg'>₹" + res.ss2.amt + "</div></div>";
-      } else { ssHtml = "<p class='text-xs text-slate-400 mt-2 font-medium'>No recent screenshots uploaded.</p>"; }
-      document.getElementById('widget-ss2').innerHTML = ssHtml;
+      try {
+        var ssHtml = "";
+        if (res.ss2) {
+          var statusColor = String(res.ss2.bankStatus).toUpperCase() === 'CLEARED' ? 'text-emerald-600' : 'text-amber-600';
+          ssHtml = "<div class='flex justify-between items-end mt-1'>" +
+            "<div>" +
+            "<div class='text-xs text-slate-500'>Submitted: <span class='font-bold text-slate-800'>" + res.ss2.updatedOn + "</span></div>" +
+            "<div class='text-xs mt-1 font-bold " + statusColor + "'>Status: " + res.ss2.bankStatus + "</div>" +
+            "</div>" +
+            "<div class='font-black text-amber-700 text-lg'>₹" + res.ss2.amt + "</div>" +
+            "</div>";
+        } else { ssHtml = "<p class='text-xs text-slate-400 mt-2 font-medium'>No recent screenshots uploaded.</p>"; }
+        var elSs2 = document.getElementById('widget-ss2');
+        if (elSs2) elSs2.innerHTML = ssHtml;
+      } catch (e3) { console.error("SS2 widget error: " + e3); }
     }
   );
 }
@@ -821,7 +933,13 @@ function processOrderSubmission() {
 
   callBackendAPI("submitCustomerOrder", { orderData: payload },
     function (res) {
-      toggleButtonState('btn-submit-order', false, 'Submit Request');
+      // START OF UPDATE
+      var btn = document.getElementById('btn-submit-order');
+      btn.disabled = false;
+      btn.style.opacity = '1.0';
+      btn.innerHTML = 'Submit Request';
+      btn.classList.remove('ring-2', 'ring-rose-400', 'ring-offset-2'); // Clear flair
+      // END OF UPDATE
       
       window.pendingReplaceQty = null;
       window.pendingReplaceReason = null;
@@ -850,7 +968,18 @@ function processOrderSubmission() {
           activeUserSession.rowCache.ord = res.rowIdx;
         }
         
-        renderOrderWidget();
+        // Ensure UI transitions back to Read-Only correctly
+        var poDetails = document.getElementById('po-details');
+        var poEmpty = document.getElementById('po-empty-msg');
+
+        if (poDetails) poDetails.classList.remove('hidden');
+        if (poEmpty) poEmpty.classList.add('hidden');
+
+        document.getElementById('po-date').innerText = "Just now";
+        document.getElementById('po-cans').innerText = dVal;
+        document.getElementById('po-empties').innerText = eVal;
+
+        toggleOrderEditMode(false);
       }
     },
     function (err) {
