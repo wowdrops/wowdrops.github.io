@@ -277,7 +277,6 @@ function executeCancelOrder() {
   btn.innerHTML = 'Cancelling...';
   btn.disabled = true;
   
-  // ⚡ UPDATED PAYLOAD
   var payload = { 
     cpn: activeUserSession.cpn,
     uniqueNo: activeUserSession.uniqueNo,
@@ -299,7 +298,22 @@ function executeCancelOrder() {
               setTimeout(() => msgEl.classList.add('hidden'), 5000);
           }
           
-          if (activeUserSession) activeUserSession.hasExistingOrder = false;
+          // ⚡ FULL MEMORY WIPE
+          if (activeUserSession) {
+            activeUserSession.hasExistingOrder = false;
+            activeUserSession.replaceQty = 0;
+            activeUserSession.replaceReason = "";
+            localStorage.setItem('wowdrops_customer_session', JSON.stringify(activeUserSession));
+          }
+
+          window.pendingReplaceQty = null;
+          window.pendingReplaceReason = null;
+          var badge = document.getElementById('replacement-badge');
+          if (badge) {
+            badge.classList.add('hidden');
+            badge.classList.remove('flex');
+          }
+          // ⚡ END FULL MEMORY WIPE
           
           var poDetails = document.getElementById('po-details');
           var poEmpty = document.getElementById('po-empty-msg');
@@ -1318,5 +1332,17 @@ function saveReplacementToOrder() {
   window.pendingReplaceReason = rReason;
   
   closeReplacementModal();
-  renderOrderWidget(); 
+  
+  // ⚡ FIX: Update the UI Badge dynamically without resetting the whole widget
+  var badge = document.getElementById('replacement-badge');
+  var badgeText = document.getElementById('replacement-badge-text');
+
+  if (rQty > 0) {
+    badgeText.innerText = "📦 Includes " + rQty + " Free Replacement (" + rReason + ")";
+    badge.classList.remove('hidden');
+    badge.classList.add('flex');
+  } else {
+    badge.classList.add('hidden');
+    badge.classList.remove('flex');
+  }
 }

@@ -5,14 +5,36 @@
   <meta charset="UTF-8">
   <base target="_top">
   <title>WOW DROPS - Customer Portal</title>
-  <!--<link rel="icon" href="https://drive.google.com/uc?id=14BAw0p7X-FFaDpmyL81WqKgxWGLoYrZy&export=download&format=png" type="image/png">-->
   <link rel="icon" href="wowLogo.jpg" type="image/png">
   <script src="https://cdn.tailwindcss.com"></script>
-  <meta name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
+
+  <script>
+    // 1. Force Tailwind to override input font sizes globally to 16px (Stops iOS auto-zoom)
+    tailwind.config = {
+      corePlugins: {
+        preflight: true,
+      }
+    }
+
+    // 2. Global listener to drop mobile keyboard on button touch
+    document.addEventListener('DOMContentLoaded', () => {
+      const interactiveElements = document.querySelectorAll('button, input[type="button"], input[type="submit"], [role="button"]');
+      interactiveElements.forEach(element => {
+        element.addEventListener('touchstart', () => {
+          if (document.activeElement &&
+            (document.activeElement.tagName === 'INPUT' ||
+              document.activeElement.tagName === 'TEXTAREA' ||
+              document.activeElement.tagName === 'SELECT')) {
+            document.activeElement.blur(); 
+          }
+        });
+      });
+    });
+  </script>
 
   <!-- Link to external CSS -->
   <link rel="stylesheet" href="351_portal.css">
