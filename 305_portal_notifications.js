@@ -1,18 +1,22 @@
 // ==========================================
-// NOTIFICATIONS ENGINE
+// FIREBASE NOTIFICATIONS ENGINE
 // ==========================================
-const VAPID_PUBLIC_KEY = "BKEhieRgAwDeodM7N8IVzeg9xlfmt06E4ynj9W-uWOs7Ad6RMNBykxAQ9TLY_Tz6NTc4flpHe8zsXaF_4cteLQs"; 
 
-function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
+// ⚠️ PASTE YOUR FIREBASE CONFIG HERE FROM STEP 1
+const firebaseConfig = {
+  apiKey: "AIzaSyADBmoxl5J9anzwjJgpDQEuxvhfZvl9Dhk",
+  authDomain: "wowdropspush.firebaseapp.com",
+  projectId: "wowdropspush",
+  storageBucket: "wowdropspush.firebasestorage.app",
+  messagingSenderId: "907964211557",
+  appId: "1:907964211557:web:d53857dc437c403ad8818c"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
+
+const VAPID_PUBLIC_KEY = "BKEhieRgAwDeodM7N8IVzeg9xlfmt06E4ynj9W-uWOs7Ad6RMNBykxAQ9TLY_Tz6NTc4flpHe8zsXaF_4cteLQs";
 
 function triggerNotificationSetup() {
   if (!activeUserSession) return alert("Please login first to enable notifications.");
@@ -30,61 +34,48 @@ function triggerNotificationSetup() {
       if (permission === 'granted') {
         subscribeUserToPush();
       } else {
-        alert('Notification permission denied. You can enable it in your browser settings.');
+        alert('Notification permission denied.');
       }
     });
-  } else {
-    alert('Push notifications are not supported in this browser. Please use Chrome or Safari.');
   }
 }
 
 async function subscribeUserToPush() {
   try {
-    // 1. Register the service worker
-    await navigator.serviceWorker.register('300_sw.js');
+    const registration = await navigator.serviceWorker.register('300_sw.js');
+    await navigator.serviceWorker.ready;
     
-    // 2. ⚡ FIX: Explicitly WAIT for the service worker to be fully active and ready!
-    const registration = await navigator.serviceWorker.ready;
-    
-    // 3. Now subscribe
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    // ⚡ THIS IS THE MAGIC FIREBASE CALL THAT FIXES THE ERROR 
+    const token = await messaging.getToken({
+      vapidKey: VAPID_PUBLIC_KEY,
+      serviceWorkerRegistration: registration
     });
 
-    // Send the subscription keys securely to Google Apps Script
-    callBackendAPI("savePushSubscription", { 
-      cpn: activeUserSession.cpn, 
-      subscriptionObj: JSON.stringify(subscription) 
-    }, 
-    function(res) {
-      if (res.success) alert("✅ Daily alerts successfully enabled on this device!");
-      else alert("Failed to save configuration: " + res.message);
-    }, 
-    function(err) {
-      alert("Network error while saving notification settings.");
-    });
+    if (token) {
+      callBackendAPI("savePushSubscription", { 
+        cpn: activeUserSession.cpn, 
+        subscriptionObj: token // We now send a pure Firebase string token!
+      }, 
+      function(res) {
+        if (res.success) alert("✅ Daily alerts successfully enabled on this device!");
+      });
+    }
 
   } catch (error) {
     console.error('Failed to subscribe user: ', error);
-    alert('Could not enable notifications. Check console for details.');
   }
 }
 
 // --- PROACTIVE NOTIFICATION LOGIC ---
 function checkNotificationStatus() {
-  if ('Notification' in window && Notification.permission === 'denied') {
+  if ('Notification' in window && (Notification.permission === 'granted' || Notification.permission === 'denied')) {
       return; 
   }
-
   var skippedTime = localStorage.getItem('notification_skipped_time');
   if (skippedTime) {
     var daysElapsed = (new Date().getTime() - parseInt(skippedTime)) / (1000 * 60 * 60 * 24);
-    if (daysElapsed < 5) {
-      return; 
-    }
+    if (daysElapsed < 2) return; 
   }
-  
   setTimeout(function () { 
       var notifModal = document.getElementById('notification-modal');
       if (notifModal) notifModal.classList.remove('hidden'); 
