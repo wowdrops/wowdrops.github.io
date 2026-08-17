@@ -6,6 +6,7 @@
   <base target="_top">
   <title>WOW DROPS - Customer Portal</title>
   <link rel="icon" href="wowLogo.jpg" type="image/png">
+  <link rel="manifest" href="manifest.json">
   <script src="https://cdn.tailwindcss.com"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -37,7 +38,7 @@
   </script>
 
   <!-- Link to external CSS -->
-  <link rel="stylesheet" href="351_portal.css">
+  <link rel="stylesheet" href="391_portal.css">
 </head>
 
 <body class="font-sans antialiased text-slate-900">
@@ -244,8 +245,10 @@
             </svg>
           </button>
 
-          <div id="dropdown-menu"
-            class="hidden absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-2xl py-2 z-30 border border-slate-100 overflow-hidden">
+          <div id="dropdown-menu" class="hidden absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-2xl py-2 z-30 border border-slate-100 overflow-hidden">
+            <a href="javascript:void(0)" onclick="event.preventDefault(); triggerNotificationSetup(); toggleMenu();" class="block px-5 py-3 text-sm text-emerald-600 font-black hover:bg-slate-50 border-b border-slate-50 transition flex items-center justify-between">
+              Enable Daily Alerts 🔔
+            </a>
             <a href="javascript:void(0)" onclick="event.preventDefault(); openProfile(); toggleMenu();"
               class="block px-5 py-3 text-sm text-slate-700 font-semibold hover:bg-slate-50 border-b border-slate-50 transition">My
               Profile</a>
@@ -828,6 +831,23 @@
       </div>
     </div>
 
+    <!-- NOTIFICATION PROMPT MODAL -->
+    <div id="notification-modal" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 fade-in">
+      <div class="bg-white w-full max-w-sm rounded-[24px] shadow-2xl p-6 text-center space-y-4">
+        <div class="mx-auto w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-2">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+          </svg>
+        </div>
+        <h3 class="font-extrabold text-xl text-slate-800">Stay Updated</h3>
+        <p class="text-xs text-slate-500 font-medium">Enable daily alerts to get instant reminders about your pending dues and delivery updates.</p>
+        <div class="flex gap-2 pt-2">
+          <button onclick="skipNotificationCapture()" class="flex-1 bg-white border border-slate-200 text-slate-500 font-bold p-3 rounded-xl hover:bg-slate-50 transition text-sm">Maybe Later</button>
+          <button onclick="acceptNotificationCapture()" class="flex-1 bg-emerald-600 text-white font-bold p-3 rounded-xl hover:bg-emerald-700 transition text-sm shadow-md">Enable Alerts</button>
+        </div>
+      </div>
+    </div>
+
     <!-- PAYMENT MODAL -->
     <div id="payment-modal"
       class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
@@ -1012,10 +1032,32 @@
         </div>
       </div>
     </div>
-
-  <!-- Link to external JS -->
-  <script src="351_portal.js?v=" defer></script>
-  <script src="351_portal_PG.js" defer></script>
+    <!-- iOS INSTALL PROMPT MODAL -->
+    <div id="ios-install-prompt" class="fixed inset-x-0 bottom-0 z-[9999] bg-white rounded-t-[2rem] shadow-[0_-20px_50px_rgba(0,0,0,0.15)] p-6 hidden transform transition-transform border-t border-slate-200 fade-in">
+      <div class="flex flex-col items-center text-center">
+        <img src="wowLogo.jpg" class="w-16 h-16 rounded-2xl shadow-md border border-slate-100 mb-4">
+        <h4 class="font-black text-slate-800 text-xl">Install WOW DROPS</h4>
+        <p class="text-sm text-slate-500 font-medium mt-2 leading-snug px-4">Get daily booking reminders directly on your iPhone by adding this app to your Home Screen.</p>
+      </div>
+      <div class="mt-6 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-700 space-y-3">
+        <p class="flex items-center">
+          <span class="bg-indigo-100 text-indigo-700 w-6 h-6 rounded-full flex items-center justify-center text-xs mr-3 shrink-0">1</span> 
+          Tap the <svg class="w-6 h-6 text-indigo-600 mx-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> Share button below.
+        </p>
+        <p class="flex items-start">
+          <span class="bg-indigo-100 text-indigo-700 w-6 h-6 rounded-full flex items-center justify-center text-xs mr-3 shrink-0">2</span> 
+          <span>Scroll down and select <span class="bg-white border border-slate-200 px-2 py-1 rounded shadow-sm text-xs ml-1 inline-block mt-1">➕ Add to Home Screen</span></span>
+        </p>
+      </div>
+      <button onclick="document.getElementById('ios-install-prompt').classList.add('hidden')" class="w-full mt-6 bg-slate-200 hover:bg-slate-300 text-slate-700 font-black p-4 rounded-xl transition text-sm uppercase tracking-widest">Dismiss</button>
+    </div>
+  <!-- Link to external JS Modules -->
+  <script src="301_portal_core.js?v=4.2" defer></script>
+  <script src="302_portal_auth.js?v=4.2" defer></script>
+  <script src="303_portal_dashboard.js?v=4.2" defer></script>
+  <script src="304_portal_history.js?v=4.2" defer></script>
+  <script src="305_portal_notifications.js?v=4.2" defer></script>
+  <script src="306_portal_PG.js?v=4.2" defer></script>
 
 </body>
 

@@ -1,7 +1,6 @@
 // ==========================================
 // PAYMENT GATEWAY ROUTING & UI
 // ==========================================
-
 var ENABLE_PHONEPE_GATEWAY = false; // "True" only for dev testing
 const PAYMENT_GATEWAY_UPIID = "cpnawin-5@okaxis";
 const PAYMENT_GATEWAY_PAYEENAME = "WOW DROPS FOOD AND BEVERAGES";
@@ -34,7 +33,6 @@ function checkForPaymentRedirect() {
         } else if (res.status === 'PENDING') {
           showInlinePaymentMessage(true, amountExtracted, txnId, "⏳ Payment is still pending. It will be updated automatically once cleared.");
         } else {
-          // FIX: Prevents duplicate error messaging
           showInlinePaymentMessage(false, amountExtracted, txnId, res.message || "Payment Failed or Cancelled. Please try again.");
         }
       },
@@ -50,7 +48,6 @@ function showInlinePaymentMessage(isSuccess, amount, txnId, customMessage) {
     var banner = document.getElementById('payment-status-banner');
     if (!banner) return;
 
-    // FIX: Added Date alongside the Time
     var timeNow = new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
     
     var bgColor = isSuccess ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800';
@@ -72,7 +69,6 @@ function showInlinePaymentMessage(isSuccess, amount, txnId, customMessage) {
             <div class="flex items-start space-x-3">
                 <div class="shrink-0 mt-0.5 ${iconColor}">${iconSvg}</div>
                 <div class="flex-1">
-                    <!-- FIX: Bumped text-sm to text-base for larger font -->
                     <h4 class="text-base font-black uppercase tracking-wide">${title}</h4>
                     <p class="text-xs font-medium mt-1">${customMessage}</p>
                     <div class="mt-3 bg-white/50 rounded-lg p-2.5 border border-black/5 flex flex-col gap-1.5 text-[10px] font-bold text-slate-600">
@@ -90,9 +86,6 @@ function showInlinePaymentMessage(isSuccess, amount, txnId, customMessage) {
     banner.style.display = 'block'; 
 }
 
-// ==========================================
-// UPI MODAL & UTILS
-// ==========================================
 function openPaymentPopup(type = 'total') {
   if (!activeUserSession) return;
   var prevSum = (activeUserSession.older || 0) + (activeUserSession.lastMon || 0);
