@@ -40,12 +40,19 @@ function triggerNotificationSetup() {
 
 async function subscribeUserToPush() {
   try {
-    const registration = await navigator.serviceWorker.register('300_sw.js');
+    // 1. Register the service worker
+    await navigator.serviceWorker.register('300_sw.js');
+    
+    // 2. ⚡ FIX: Explicitly WAIT for the service worker to be fully active and ready!
+    const registration = await navigator.serviceWorker.ready;
+    
+    // 3. Now subscribe
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
     });
 
+    // Send the subscription keys securely to Google Apps Script
     callBackendAPI("savePushSubscription", { 
       cpn: activeUserSession.cpn, 
       subscriptionObj: JSON.stringify(subscription) 
