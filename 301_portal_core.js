@@ -56,8 +56,12 @@ window.onload = function () {
   } else {
     ENABLE_PHONEPE_GATEWAY = false;
   }
+
   if (typeof checkForPaymentRedirect === "function") checkForPaymentRedirect();
-};
+
+  checkDeviceCapabilities();
+  
+};//END ONLOAD 
 
 function isServerBusy() {
   if (activeApiRequests > 0) { showBusyMessage(); return true; }
@@ -91,6 +95,24 @@ function getDefaultDateRange() {
   var start = new Date();
   start.setDate(end.getDate() - 30);
   return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+}
+
+function checkDeviceCapabilities() {
+  // 1. Detect if the device is an iPhone, iPad, or iPod
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  
+  // 2. Detect if the user has already Added to Home Screen (Standalone mode)
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+  // 3. The Logic
+  if (isIOS && !isStandalone) {
+    // It's an iPhone, but running in standard Safari. Apple blocks push notifications here.
+    // Hide the subscribe button and show the instructions!
+    var subBtn = document.getElementById('btn-subscribe-alerts'); // Change this ID to match your actual button!
+    if (subBtn) subBtn.style.display = 'none';
+    
+    document.getElementById('ios-pwa-warning').classList.remove('hidden');
+  }
 }
 
 var apiQueue = [];
