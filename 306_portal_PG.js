@@ -135,6 +135,7 @@ function triggerUPIPayment() {
 
 function executePhonePeFlow() {
   var amt = parseFloat(document.getElementById('pay-custom-amt').value);
+  var amt = parseInt(document.getElementById('pay-custom-amt').value, 10);
   if (isNaN(amt) || amt <= 0) return alert("Please enter a valid amount greater than 0.");
 
   var btn = document.querySelector('#payment-modal button.bg-emerald-500');
