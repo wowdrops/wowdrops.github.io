@@ -93,7 +93,7 @@ async function refreshCustomerSessionData(cpn) {
     alert("Failed to load dashboard data. Please try refreshing the page.");
   }
 
-  setTimeout(function () { window.scrollTo(0, 1); window.scrollTo(0, 0); }, 300);
+  //setTimeout(function () { window.scrollTo(0, 1); window.scrollTo(0, 0); }, 300);
 }
 
 function renderOrderWidget() {
