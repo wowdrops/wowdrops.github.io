@@ -33,7 +33,11 @@ async function refreshCustomerSessionData(cpn) {
 
   try {
     const fastData = await callBackendAsync("getQuickOrderData", { cpn: cpn, cachedOrdRow: activeUserSession.rowCache.ord });
-    
+     // ⚡ THE FIX: Verify the backend succeeded before reading the data
+    if (!fastData || fastData.success === false) {
+        throw new Error(fastData.message || "Backend failed to fetch Quick Order Data.");
+    }
+
     activeUserSession.uniqueNo = fastData.existingOrder.uniqueNo; 
     activeUserSession.rowCache.ord = fastData.existingOrder.rowNo;
     activeUserSession.existingOrdD = fastData.existingOrder.ordD;
@@ -56,6 +60,10 @@ async function refreshCustomerSessionData(cpn) {
     await sleep(600);
 
     const ledgerData = await callBackendAsync("getFinancialLedgerData", { cpn: cpn, cachedOutRow: activeUserSession.rowCache.out, cachedDbRow: activeUserSession.rowCache.db });
+    // ⚡ THE FIX: Protect the second API call as well
+    if (!ledgerData || ledgerData.success === false) {
+        throw new Error(ledgerData.message || "Backend failed to fetch Ledger Data.");
+    }
     
     if (ledgerData.status === 'INACTIVE') {
         localStorage.removeItem('wowdrops_customer_session');
