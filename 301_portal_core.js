@@ -2,6 +2,8 @@
 // CORE ENGINE & API
 // ==========================================
 const APPS_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbzhY0E8LaGEaGol7lqOjPdvss-cHeIhvejr6yB9D5EvUevSC4haUVbOFlwtgBht819ntg/exec";
+//const APPS_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbzkQm5qstqVrPiq6z0DKjJEWYOrajwa_8D4FS5rOqkV/dev";
+
 var activeApiRequests = 0;
 
 const ALLOW_MANUAL_CAN_ENTRY = false;
@@ -124,6 +126,8 @@ function callBackendAPI(actionName, payload, onSuccess, onFailure) {
   processApiQueue();
 }
 
+
+/*
 async function processApiQueue() {
   if (isProcessingQueue || apiQueue.length === 0) return;
   isProcessingQueue = true;
@@ -150,6 +154,65 @@ async function processApiQueue() {
     isProcessingQueue = false;
     setTimeout(processApiQueue, 300);
   }
+} 
+  */
+
+async function processApiQueue() {
+  if (isProcessingQueue || apiQueue.length === 0) return;
+  isProcessingQueue = true;
+  activeApiRequests++;
+  const currentRequest = apiQueue.shift();
+
+  let attempts = 0;
+  const maxAttempts = 3; // The app will silently try 3 times before giving up
+  let success = false;
+
+  while (attempts < maxAttempts && !success) {
+    try {
+      const response = await fetch(APPS_SCRIPT_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(currentRequest.payload),
+        redirect: 'follow'
+      });
+      
+      // If Google rejects the request because it is busy, force an error to trigger the retry loop
+      if (!response.ok) {
+         throw new Error(`Google Server Rejected (HTTP ${response.status})`);
+      }
+      
+      const rawText = await response.text();
+      let data;
+      try { 
+        data = JSON.parse(rawText); 
+      } catch (e) { 
+        throw new Error("Server returned invalid data format."); 
+      }
+      
+      // If successful, pass the data and break the loop
+      if (currentRequest.onSuccess) currentRequest.onSuccess(data);
+      success = true; 
+      
+    } catch (error) {
+      attempts++;
+      console.warn(`API Attempt ${attempts} failed. Google is busy.`, error);
+      
+      if (attempts >= maxAttempts) {
+        // Only show the error to the user if it fails 3 times in a row
+        console.error("All auto-retry attempts failed.");
+        if (currentRequest.onFailure) currentRequest.onFailure(error);
+      } else {
+        // Wait 2 seconds on the first fail, 4 seconds on the second fail, then try again silently
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
+      }
+    }
+  }
+  
+  activeApiRequests--;
+  isProcessingQueue = false;
+  
+  // Wait a fraction of a second before processing the next item in the queue
+  setTimeout(processApiQueue, 300);
 }
 
 const callBackendAsync = (action, payload) => {

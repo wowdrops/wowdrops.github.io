@@ -98,7 +98,19 @@ async function refreshCustomerSessionData(cpn) {
 
   } catch (error) {
     console.error("Dashboard failed to load securely:", error);
-    alert("Failed to load dashboard data. Please try refreshing the page.");
+    alert("Failed to connect to the server. Please check your internet or try refreshing.");
+    
+    // Stop the spinning skeleton circle
+    var skel = document.getElementById('dash-skel');
+    if (skel) skel.classList.add('hidden');
+    
+    // Reset the submit button so it isn't permanently grayed out
+    var submitBtn = document.getElementById('btn-submit-order');
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      submitBtn.innerHTML = "<span>Refresh to Try Again</span>";
+    }
   }
 
   //setTimeout(function () { window.scrollTo(0, 1); window.scrollTo(0, 0); }, 300);
