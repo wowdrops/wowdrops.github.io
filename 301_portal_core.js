@@ -126,37 +126,6 @@ function callBackendAPI(actionName, payload, onSuccess, onFailure) {
   processApiQueue();
 }
 
-
-/*
-async function processApiQueue() {
-  if (isProcessingQueue || apiQueue.length === 0) return;
-  isProcessingQueue = true;
-  activeApiRequests++;
-  const currentRequest = apiQueue.shift();
-
-  try {
-    const response = await fetch(APPS_SCRIPT_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(currentRequest.payload),
-      redirect: 'follow'
-    });
-    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-    const rawText = await response.text();
-    let data;
-    try { data = JSON.parse(rawText); } catch (e) { throw new Error("Server returned invalid JSON"); }
-    if (currentRequest.onSuccess) currentRequest.onSuccess(data);
-  } catch (error) {
-    console.error("API Error:", error);
-    if (currentRequest.onFailure) currentRequest.onFailure(error);
-  } finally {
-    activeApiRequests--;
-    isProcessingQueue = false;
-    setTimeout(processApiQueue, 300);
-  }
-} 
-  */
-
 async function processApiQueue() {
   if (isProcessingQueue || apiQueue.length === 0) return;
   isProcessingQueue = true;
@@ -185,9 +154,26 @@ async function processApiQueue() {
       let data;
       try { 
         data = JSON.parse(rawText); 
+
       } catch (e) { 
         throw new Error("Server returned invalid data format."); 
       }
+
+      // --- ADD THIS MAINTENANCE INTERCEPTOR ---
+      if (data.maintenance) {
+        document.body.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#f8fafc;font-family:sans-serif;text-align:center;padding:20px;color:#0f172a;">
+            <div style="background:#fff;padding:40px;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.1);max-width:400px;width:100%;">
+              <svg style="width:48px;height:48px;margin:0 auto 16px;color:#6366f1;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+              <h2 style="margin:0 0 10px;font-size:20px;font-weight:800;">Under Scheduled Maintenance</h2>
+              <p style="color:#64748b;line-height:1.5;margin:0;font-size:14px;">${data.message}</p>
+            </div>
+          </div>`;
+        activeApiRequests--;
+        isProcessingQueue = false;
+        return; // Stops further execution
+      }
+      // ----------------------------------------
       
       // If successful, pass the data and break the loop
       if (currentRequest.onSuccess) currentRequest.onSuccess(data);
