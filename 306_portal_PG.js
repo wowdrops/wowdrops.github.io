@@ -1,9 +1,6 @@
 // ==========================================
-// PAYMENT GATEWAY ROUTING & UI
+// PAYMENT GATEWAY ROUTING & UI (Supabase Version)
 // ==========================================
-var ENABLE_PHONEPE_GATEWAY = false; // "True" only for dev testing
-const PAYMENT_GATEWAY_UPIID = "cpnawin-5@okaxis";
-const PAYMENT_GATEWAY_PAYEENAME = "WOW DROPS FOOD AND BEVERAGES";
 
 function checkForPaymentRedirect() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -18,12 +15,13 @@ function checkForPaymentRedirect() {
       </div>
     `);
 
+    // Clean the URL so a refresh doesn't trigger verification again
     window.history.replaceState({}, document.title, window.location.pathname);
 
+    // Make sure callBackendAPI points to your NEW Webhook URL!
     callBackendAPI("checkPaymentStatus", { txnId: txnId }, 
       function(res) {
         document.getElementById('payment-verify-overlay').remove();
-
         var amtMatch = res.message ? res.message.match(/₹([0-9.,]+)/) : null;
         var amountExtracted = amtMatch ? amtMatch[1] : null;
 
@@ -62,7 +60,7 @@ function showInlinePaymentMessage(isSuccess, amount, txnId, customMessage) {
     var txnDisplay = txnId || 'N/A';
 
     var html = `
-        <div class="${bgColor} p-4 rounded-xl border shadow-sm relative fade-in">
+        <div class="${bgColor} p-4 rounded-xl border shadow-sm relative fade-in mb-4">
             <button onclick="this.parentElement.style.display='none'" class="absolute top-2 right-2 text-slate-400 hover:text-slate-600 transition">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
@@ -118,23 +116,16 @@ function updatePayInput(radio) {
   document.getElementById('pay-custom-amt').value = formatCurrency(val);
 }
 
+function handleCustomAmountInput(inputEl) {
+    var radios = document.querySelectorAll('input[name="pay-amt"]');
+    radios.forEach(r => r.checked = false);
+}
+
 function closePaymentPopup() {
   document.getElementById('payment-modal').classList.add('hidden');
-  if (window.originalPaymentHtml) {
-    setTimeout(function () { document.querySelector('#payment-modal .p-6').innerHTML = window.originalPaymentHtml; }, 300);
-  }
 }
 
 function triggerUPIPayment() {
-  if (ENABLE_PHONEPE_GATEWAY) {
-    executePhonePeFlow();
-  } else {
-    executeStandardUPIFlow();
-  }
-}
-
-function executePhonePeFlow() {
-  var amt = parseFloat(document.getElementById('pay-custom-amt').value);
   var amt = parseInt(document.getElementById('pay-custom-amt').value, 10);
   if (isNaN(amt) || amt <= 0) return alert("Please enter a valid amount greater than 0.");
 
@@ -144,7 +135,10 @@ function executePhonePeFlow() {
   btn.disabled = true;
   btn.classList.replace("bg-emerald-500", "bg-slate-400");
 
-  callBackendAPI("initiatePhonePePayment", { cpn: activeUserSession.cpn, amount: amt },
+  // Dynamically grab the current page URL
+  var currentUrl = window.location.origin + window.location.pathname;
+
+  callBackendAPI("initiatePhonePePayment", { cpn: activeUserSession.cpn, amount: amt  },
     function (res) {
       if (res.success) {
         btn.innerHTML = "Redirecting to PhonePe...";
@@ -163,34 +157,4 @@ function executePhonePeFlow() {
       alert("Network Error: Could not connect to gateway.");
     }
   );
-}
-
-function executeStandardUPIFlow() {
-  var amt = parseFloat(document.getElementById('pay-custom-amt').value);
-  if (isNaN(amt) || amt <= 0) return alert("Please enter a valid amount greater than 0.");
-
-  var tempInput = document.createElement("input");
-  tempInput.value = PAYMENT_GATEWAY_UPIID;
-  document.body.appendChild(tempInput);
-  tempInput.select();
-  try { document.execCommand("copy"); } catch (e) { }
-  document.body.removeChild(tempInput);
-
-  var btn = document.querySelector('#payment-modal button.bg-emerald-500');
-  var originalText = "";
-  if (btn) {
-    originalText = btn.innerHTML;
-    btn.innerHTML = "UPI ID Copied! Select your App...";
-    btn.classList.replace("bg-emerald-500", "bg-indigo-600");
-  }
-
-  window.location.href = "upi://pay";
-
-  setTimeout(function () {
-    if (btn) {
-      btn.innerHTML = originalText;
-      btn.classList.replace("bg-indigo-600", "bg-emerald-500");
-    }
-    closePaymentPopup();
-  }, 2500);
 }

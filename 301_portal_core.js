@@ -1,8 +1,6 @@
 // ==========================================
-// CORE ENGINE & API
+// CORE ENGINE & API (Supabase & PhonePe Edition)
 // ==========================================
-const APPS_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbzhY0E8LaGEaGol7lqOjPdvss-cHeIhvejr6yB9D5EvUevSC4haUVbOFlwtgBht819ntg/exec";
-//const APPS_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbzkQm5qstqVrPiq6z0DKjJEWYOrajwa_8D4FS5rOqkV/dev";
 
 var activeApiRequests = 0;
 
@@ -20,7 +18,7 @@ window.limitReasonD = "";
 window.limitReasonE = "";
 
 (function () {
-  var APP_VERSION = "4.2";
+  var APP_VERSION = "4.3"; // Bumped version for new PG rollout
   var savedVersion = localStorage.getItem('wowdrops_app_version');
   if (savedVersion !== APP_VERSION) {
     localStorage.setItem('wowdrops_app_version', APP_VERSION);
@@ -53,16 +51,9 @@ window.onload = function () {
     refreshCustomerSessionData(activeUserSession.cpn);
   }
 
-  if (CURRENT_ENV === 'Live') {
-    ENABLE_PHONEPE_GATEWAY = true;
-  } else {
-    ENABLE_PHONEPE_GATEWAY = false;
-  }
-
   if (typeof checkForPaymentRedirect === "function") checkForPaymentRedirect();
 
   checkDeviceCapabilities();
-  
 };//END ONLOAD 
 
 function isServerBusy() {
@@ -100,19 +91,12 @@ function getDefaultDateRange() {
 }
 
 function checkDeviceCapabilities() {
-  // 1. Detect if the device is an iPhone, iPad, or iPod
   var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  
-  // 2. Detect if the user has already Added to Home Screen (Standalone mode)
   var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
-  // 3. The Logic
   if (isIOS && !isStandalone) {
-    // It's an iPhone, but running in standard Safari. Apple blocks push notifications here.
-    // Hide the subscribe button and show the instructions!
-    var subBtn = document.getElementById('btn-subscribe-alerts'); // Change this ID to match your actual button!
+    var subBtn = document.getElementById('btn-subscribe-alerts'); 
     if (subBtn) subBtn.style.display = 'none';
-    
     document.getElementById('ios-pwa-warning').classList.remove('hidden');
   }
 }
@@ -133,19 +117,18 @@ async function processApiQueue() {
   const currentRequest = apiQueue.shift();
 
   let attempts = 0;
-  const maxAttempts = 3; // The app will silently try 3 times before giving up
+  const maxAttempts = 3; 
   let success = false;
 
   while (attempts < maxAttempts && !success) {
     try {
-      const response = await fetch(APPS_SCRIPT_API_URL, {
+      const response = await fetch(GAS_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(currentRequest.payload),
         redirect: 'follow'
       });
       
-      // If Google rejects the request because it is busy, force an error to trigger the retry loop
       if (!response.ok) {
          throw new Error(`Google Server Rejected (HTTP ${response.status})`);
       }
@@ -154,28 +137,10 @@ async function processApiQueue() {
       let data;
       try { 
         data = JSON.parse(rawText); 
-
       } catch (e) { 
         throw new Error("Server returned invalid data format."); 
       }
-
-      // --- ADD THIS MAINTENANCE INTERCEPTOR ---
-      if (data.maintenance) {
-        document.body.innerHTML = `
-          <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#f8fafc;font-family:sans-serif;text-align:center;padding:20px;color:#0f172a;">
-            <div style="background:#fff;padding:40px;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.1);max-width:400px;width:100%;">
-              <svg style="width:48px;height:48px;margin:0 auto 16px;color:#6366f1;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-              <h2 style="margin:0 0 10px;font-size:20px;font-weight:800;">Under Scheduled Maintenance</h2>
-              <p style="color:#64748b;line-height:1.5;margin:0;font-size:14px;">${data.message}</p>
-            </div>
-          </div>`;
-        activeApiRequests--;
-        isProcessingQueue = false;
-        return; // Stops further execution
-      }
-      // ----------------------------------------
       
-      // If successful, pass the data and break the loop
       if (currentRequest.onSuccess) currentRequest.onSuccess(data);
       success = true; 
       
@@ -184,11 +149,9 @@ async function processApiQueue() {
       console.warn(`API Attempt ${attempts} failed. Google is busy.`, error);
       
       if (attempts >= maxAttempts) {
-        // Only show the error to the user if it fails 3 times in a row
         console.error("All auto-retry attempts failed.");
         if (currentRequest.onFailure) currentRequest.onFailure(error);
       } else {
-        // Wait 2 seconds on the first fail, 4 seconds on the second fail, then try again silently
         await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
       }
     }
@@ -196,8 +159,6 @@ async function processApiQueue() {
   
   activeApiRequests--;
   isProcessingQueue = false;
-  
-  // Wait a fraction of a second before processing the next item in the queue
   setTimeout(processApiQueue, 300);
 }
 
@@ -208,7 +169,8 @@ const callBackendAsync = (action, payload) => {
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 function switchView(viewId) {
-  ['view-login', 'view-new-password', 'view-forgot-password', 'view-profile', 'view-dashboard', 'view-sales-history', 'view-payment-history', 'view-screenshots'].forEach(id => {
+  // Removed 'view-screenshots' from this array
+  ['view-login', 'view-new-password', 'view-forgot-password', 'view-profile', 'view-dashboard', 'view-sales-history', 'view-payment-history'].forEach(id => {
     document.getElementById(id).classList.add('hidden');
   });
   document.getElementById(viewId).classList.remove('hidden');

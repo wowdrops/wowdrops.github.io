@@ -1,5 +1,5 @@
 // ==========================================
-// DASHBOARD & ORDERS
+// DASHBOARD & ORDERS (Supabase Version)
 // ==========================================
 function updateHeaderDisplays() {
   if (!activeUserSession) return;
@@ -7,6 +7,7 @@ function updateHeaderDisplays() {
   var parts = [];
   if (activeUserSession.phone) parts.push(activeUserSession.phone);
   if (activeUserSession.cpn) parts.push(activeUserSession.cpn);
+  if (activeUserSession.apartment) parts.push(activeUserSession.apartment);
   if (activeUserSession.block) parts.push(activeUserSession.block);
   if (activeUserSession.door) parts.push(activeUserSession.door);
 
@@ -32,24 +33,37 @@ async function refreshCustomerSessionData(cpn) {
   if (!activeUserSession.rowCache) activeUserSession.rowCache = { ord: null, out: null, db: null };
 
   try {
-    const fastData = await callBackendAsync("getQuickOrderData", { cpn: cpn, cachedOrdRow: activeUserSession.rowCache.ord });
-     // ⚡ THE FIX: Verify the backend succeeded before reading the data
-    if (!fastData || fastData.success === false) {
-        throw new Error(fastData.message || "Backend failed to fetch Quick Order Data.");
+    // 1. Fetch Existing Order from Supabase 'orders' table
+    const { data: orderData, error: orderError } = await supabase1
+      .from('orders')
+      .select('*')
+      .eq('cpn_no', cpn)
+      .maybeSingle();
+
+    if (orderError) throw new Error("Failed to fetch order data: " + orderError.message);
+
+    activeUserSession.uniqueNo = orderData ? orderData.unique_no : null;
+    activeUserSession.existingOrdD = orderData ? (orderData.ord_d || 0) : 1;
+    activeUserSession.existingOrdE = orderData ? (orderData.ord_e || 0) : 1;
+    activeUserSession.rate = orderData ? (orderData.rate || activeUserSession.defaultRate || 0) : activeUserSession.defaultRate;
+    activeUserSession.hasExistingOrder = !!orderData;
+    activeUserSession.status = orderData ? (orderData.status || "NEW") : "NEW";
+    activeUserSession.pendingQty = orderData ? (orderData.pending_qty || 0) : 0;
+    activeUserSession.replaceQty = orderData ? (orderData.replace_qty || 0) : 0;
+    activeUserSession.replaceReason = orderData ? (orderData.replace_reason || "") : "";
+
+    if (orderData && orderData.order_date) {
+      try {
+        activeUserSession.ordDate = new Date(orderData.order_date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      } catch(e) {
+        activeUserSession.ordDate = orderData.order_date;
+      }
+    } else {
+      activeUserSession.ordDate = null;
     }
 
-    activeUserSession.uniqueNo = fastData.existingOrder.uniqueNo; 
-    activeUserSession.rowCache.ord = fastData.existingOrder.rowNo;
-    activeUserSession.existingOrdD = fastData.existingOrder.ordD;
-    activeUserSession.existingOrdE = fastData.existingOrder.ordE;
-    activeUserSession.rate = fastData.existingOrder.rate;
-    activeUserSession.ordDate = fastData.existingOrder.ordDate;
-    activeUserSession.hasExistingOrder = fastData.existingOrder.isExisting;
-    activeUserSession.supplyConfig = fastData.supplyConfig;
-    activeUserSession.status = fastData.existingOrder.status;
-    activeUserSession.pendingQty = fastData.existingOrder.pendingQty;
-    activeUserSession.replaceQty = fastData.existingOrder.replaceQty;
-    activeUserSession.replaceReason = fastData.existingOrder.replaceReason;
+    // Fetch Supply Configuration from 'setup' table
+    activeUserSession.supplyConfig = await getSupabaseSupplyConfig();
 
     var submitBtn = document.getElementById('btn-submit-order');
     submitBtn.disabled = false;
@@ -57,15 +71,29 @@ async function refreshCustomerSessionData(cpn) {
     submitBtn.innerHTML = "<span>Submit Request</span>";
 
     renderOrderWidget();
-    await sleep(600);
+    await sleep(400);
 
-    const ledgerData = await callBackendAsync("getFinancialLedgerData", { cpn: cpn, cachedOutRow: activeUserSession.rowCache.out, cachedDbRow: activeUserSession.rowCache.db });
-    // ⚡ THE FIX: Protect the second API call as well
-    if (!ledgerData || ledgerData.success === false) {
-        throw new Error(ledgerData.message || "Backend failed to fetch Ledger Data.");
-    }
-    
-    if (ledgerData.status === 'INACTIVE') {
+    // 2. Fetch Customer Outstanding, Master details, and Can Balances
+    const { data: outstandingData } = await supabase1
+      .from('v_customer_outstanding')
+      .select('*')
+      .eq('cpn_no', cpn)
+      .maybeSingle();
+
+    const { data: custData } = await supabase1
+      .from('ac_customers')
+      .select('can_deposit, maximum_ord_d, maximum_ord_e, final_status, mail_id, con2, default_rate')
+      .eq('cpn_no', cpn)
+      .maybeSingle();
+
+    /*const { data: canBalData } = await supabase1
+      .from('customer_can_balance')
+      .select('*')
+      .eq('cpn_no', cpn)
+      .maybeSingle();
+    */
+
+    if (custData && String(custData.final_status).trim().toUpperCase() === 'INACTIVE') {
         localStorage.removeItem('wowdrops_customer_session');
         activeUserSession = null;
         switchView('view-login');
@@ -75,19 +103,21 @@ async function refreshCustomerSessionData(cpn) {
         return; 
     }
 
-    activeUserSession.rowCache.out = ledgerData.outRowNo;
-    activeUserSession.rowCache.db = ledgerData.dbRowNo;
-    activeUserSession.outstanding = ledgerData.outstanding;
-    activeUserSession.currentMon = ledgerData.currentMon;
-    activeUserSession.lastMon = ledgerData.lastMon;
-    activeUserSession.older = ledgerData.older;
-    activeUserSession.cansWithCustomer = ledgerData.cansWithCustomer;
-    activeUserSession.advance = ledgerData.advance;
-    activeUserSession.maxClientD = ledgerData.maxClientD;
-    activeUserSession.maxClientE = ledgerData.maxClientE;
-    activeUserSession.email = ledgerData.email;
-    activeUserSession.whatsapp = ledgerData.whatsapp;
-    activeUserSession.defaultRate = ledgerData.defaultRate;
+    // Populate Ledger details directly matching v_customer_outstanding view columns
+    activeUserSession.outstanding = outstandingData ? (Number(outstandingData.current_balance) || 0) : 0;
+    activeUserSession.currentMon = outstandingData ? (Number(outstandingData.current_month_pending) || 0) : 0;
+    activeUserSession.lastMon = outstandingData ? (Number(outstandingData.m1_pending) || 0) : 0;
+    activeUserSession.older = outstandingData ? ((Number(outstandingData.m2_pending) || 0) + (Number(outstandingData.old_pending) || 0)) : 0;
+    //activeUserSession.advance = outstandingData ? (Number(outstandingData.advance_amount) || Number(outstandingData.can_deposit) || 0) : (custData ? (Number(custData.can_deposit) || 0) : 0);
+
+    //activeUserSession.cansWithCustomer = canBalData ? ((canBalData.filled_vj_held || 0) + (canBalData.filled_nvj_held || 0)) : 0;
+    activeUserSession.cansWithCustomer = (Number(outstandingData.cans) || 0);
+    activeUserSession.advance = custData ? (Number(custData.can_deposit) || 0) : 0;
+    activeUserSession.maxClientD = custData && custData.maximum_ord_d !== null ? Number(custData.maximum_ord_d) : 9999;
+    activeUserSession.maxClientE = custData && custData.maximum_ord_e !== null ? Number(custData.maximum_ord_e) : 9999;
+    activeUserSession.email = custData ? (custData.mail_id || "") : "";
+    activeUserSession.whatsapp = custData ? (custData.con2 || "") : "";
+    activeUserSession.defaultRate = custData ? (Number(custData.default_rate) || 0) : 0;
 
     localStorage.setItem('wowdrops_customer_session', JSON.stringify(activeUserSession));
 
@@ -100,11 +130,9 @@ async function refreshCustomerSessionData(cpn) {
     console.error("Dashboard failed to load securely:", error);
     alert("Failed to connect to the server. Please check your internet or try refreshing.");
     
-    // Stop the spinning skeleton circle
     var skel = document.getElementById('dash-skel');
     if (skel) skel.classList.add('hidden');
     
-    // Reset the submit button so it isn't permanently grayed out
     var submitBtn = document.getElementById('btn-submit-order');
     if (submitBtn) {
       submitBtn.disabled = false;
@@ -112,8 +140,59 @@ async function refreshCustomerSessionData(cpn) {
       submitBtn.innerHTML = "<span>Refresh to Try Again</span>";
     }
   }
+}
 
-  //setTimeout(function () { window.scrollTo(0, 1); window.scrollTo(0, 0); }, 300);
+// Helper to fetch global supply limits from Supabase 'setup' table
+async function getSupabaseSupplyConfig() {
+  try {
+    const { data, error } = await supabase1
+      .from('setup')
+      .select('key, value')
+      .in('key', ['PER_DAY_COUNT', 'RESTRICT_QTY', 'MIN_ENTRY_QTY', 'SUPPLY_STATUS']);
+
+    if (error || !data) return { isOn: false, isSoldOut: false, limitActive: false, globalMax: 9999 };
+
+    let configMap = {};
+    data.forEach(row => { configMap[row.key] = row.value; });
+
+    var perDayCount = Number(configMap['PER_DAY_COUNT']) || 210;
+    var restrictQty = Number(configMap['RESTRICT_QTY']) || 25;
+    var minEntryQty = Number(configMap['MIN_ENTRY_QTY']) || 1;
+    var isOn = String(configMap['SUPPLY_STATUS'] || "").trim().toUpperCase() === 'ON';
+
+    const { data: allOrders } = await supabase1
+      .from('orders')
+      .select('ord_d, pending_qty');
+
+    let totalFreshCans = 0;
+    if (allOrders) {
+      allOrders.forEach(ord => {
+        let ordD = Number(ord.ord_d) || 0;
+        let pendQty = Number(ord.pending_qty) || 0;
+        let freshImpact = Math.max(0, ordD - pendQty);
+        totalFreshCans += freshImpact;
+      });
+    }
+
+    var remainingStock = perDayCount - totalFreshCans;
+    var isSoldOut = remainingStock <= 0;
+    var limitActive = remainingStock > 0 && remainingStock <= restrictQty;
+    var currentGlobalMax = 9999;
+
+    if (isOn) {
+      if (isSoldOut) currentGlobalMax = 0;
+      else if (limitActive) currentGlobalMax = Math.min(minEntryQty, remainingStock);
+    }
+
+    return { 
+      isOn: isOn, 
+      isSoldOut: isSoldOut, 
+      limitActive: limitActive, 
+      globalMax: currentGlobalMax 
+    };
+  } catch (e) {
+    return { isOn: false, isSoldOut: false, limitActive: false, globalMax: 9999 };
+  }
 }
 
 function renderOrderWidget() {
@@ -304,68 +383,63 @@ function validateCancelAction() {
   }
 }
 
-function executeCancelOrder() {
+async function executeCancelOrder() {
   var btn = document.getElementById('btn-execute-cancel');
   btn.innerHTML = 'Cancelling...';
   btn.disabled = true;
-  
-  var payload = { 
-    cpn: activeUserSession.cpn,
-    uniqueNo: activeUserSession.uniqueNo,
-    rowIdx: activeUserSession.rowCache ? activeUserSession.rowCache.ord : null
-  };
-  
-  callBackendAPI("cancelCustomerOrder", payload, 
-    function(response) {
-      closeCancelModal();
-      btn.innerHTML = 'Confirm & Cancel'; 
-      btn.disabled = false;
-      
-      if (response.success) {
-          var msgEl = document.getElementById('order-msg');
-          if (msgEl) {
-              msgEl.innerText = "Order Cancelled Successfully.";
-              msgEl.className = "text-center text-sm font-black text-red-600 mt-3 p-2 bg-red-50 border border-red-200 rounded-lg fade-in";
-              msgEl.classList.remove('hidden');
-              setTimeout(() => msgEl.classList.add('hidden'), 5000);
-          }
-          
-          if (activeUserSession) {
-            activeUserSession.hasExistingOrder = false;
-            activeUserSession.replaceQty = 0;
-            activeUserSession.replaceReason = "";
-            localStorage.setItem('wowdrops_customer_session', JSON.stringify(activeUserSession));
-          }
 
-          window.pendingReplaceQty = null;
-          window.pendingReplaceReason = null;
-          var badge = document.getElementById('replacement-badge');
-          if (badge) {
-            badge.classList.add('hidden');
-            badge.classList.remove('flex');
-          }
-          
-          var poDetails = document.getElementById('po-details');
-          var poEmpty = document.getElementById('po-empty-msg');
-          
-          if (poDetails) poDetails.classList.add('hidden');
-          if (poEmpty) poEmpty.classList.remove('hidden');
-          
-          var poDate = document.getElementById('po-date');
-          if (poDate) poDate.innerText = "--";
-          
-          toggleOrderEditMode(true); 
-      } else {
-          alert("Failed to cancel: " + response.message);
-      }
-    },
-    function(err) {
-      closeCancelModal();
-      btn.innerHTML = 'Confirm & Cancel';
-      btn.disabled = false;
-      alert("Network error. Please try again.");
+  try {
+    const { error } = await supabase1
+      .from('orders')
+      .delete()
+      .eq('cpn_no', activeUserSession.cpn);
+
+    closeCancelModal();
+    btn.innerHTML = 'Confirm & Cancel'; 
+    btn.disabled = false;
+
+    if (error) throw error;
+
+    var msgEl = document.getElementById('order-msg');
+    if (msgEl) {
+        msgEl.innerText = "Order Cancelled Successfully.";
+        msgEl.className = "text-center text-sm font-black text-red-600 mt-3 p-2 bg-red-50 border border-red-200 rounded-lg fade-in";
+        msgEl.classList.remove('hidden');
+        setTimeout(() => msgEl.classList.add('hidden'), 5000);
     }
-  );
+    
+    if (activeUserSession) {
+      activeUserSession.hasExistingOrder = false;
+      activeUserSession.replaceQty = 0;
+      activeUserSession.replaceReason = "";
+      localStorage.setItem('wowdrops_customer_session', JSON.stringify(activeUserSession));
+    }
+
+    window.pendingReplaceQty = null;
+    window.pendingReplaceReason = null;
+    var badge = document.getElementById('replacement-badge');
+    if (badge) {
+      badge.classList.add('hidden');
+      badge.classList.remove('flex');
+    }
+    
+    var poDetails = document.getElementById('po-details');
+    var poEmpty = document.getElementById('po-empty-msg');
+    
+    if (poDetails) poDetails.classList.add('hidden');
+    if (poEmpty) poEmpty.classList.remove('hidden');
+    
+    var poDate = document.getElementById('po-date');
+    if (poDate) poDate.innerText = "--";
+    
+    toggleOrderEditMode(true); 
+
+  } catch (err) {
+    closeCancelModal();
+    btn.innerHTML = 'Confirm & Cancel';
+    btn.disabled = false;
+    alert("Failed to cancel order: " + err.message);
+  }
 }
 
 function syncCans(val) {
@@ -403,7 +477,7 @@ function quickAddCans(qty) {
   syncCans(finalQty);
 }
 
-function processOrderSubmission() {
+async function processOrderSubmission() {
   var dVal = parseInt(document.getElementById('input-ord-d').value) || 0;
   var eVal = parseInt(document.getElementById('input-ord-e').value) || 0;
   
@@ -417,78 +491,99 @@ function processOrderSubmission() {
 
   toggleButtonState('btn-submit-order', true, 'Processing...');
 
-  var payload = { 
-    cpnno: activeUserSession.cpn, 
-    ordD: dVal, 
-    ordE: eVal, 
-    replaceQty: rQty,
-    replaceReason: rReason,
-    olderDues: activeUserSession.older,
-    uniqueNo: activeUserSession.uniqueNo,
-    rowIdx: activeUserSession.rowCache ? activeUserSession.rowCache.ord : null
-  };
+  try {
+    var todayStr = new Date().toISOString().split('T')[0];
+    var currentRate = activeUserSession.defaultRate || 0;
+    var totalAmt = dVal * currentRate;
 
-  callBackendAPI("submitCustomerOrder", { orderData: payload },
-    function (res) {
-      var btn = document.getElementById('btn-submit-order');
-      btn.disabled = false;
-      btn.style.opacity = '1.0';
-      btn.innerHTML = 'Submit Request';
-      btn.classList.remove('ring-2', 'ring-rose-400', 'ring-offset-2');
-      
-      window.pendingReplaceQty = null;
-      window.pendingReplaceReason = null;
+    const payload = {
+      cpn_no: activeUserSession.cpn,
+      apartment: activeUserSession.apartment,
+      block: activeUserSession.block,
+      door: activeUserSession.door,
+      name: activeUserSession.name,
+      contact: activeUserSession.phone,
+      default_rate: currentRate,
+      can_deposit: activeUserSession.advance || 0,
+      order_date: todayStr,
+      ord_d: dVal,
+      ord_e: eVal,
+      rate: currentRate,
+      amount: totalAmt,
+      status: 'NEW',
+      replace_qty: rQty,
+      replace_reason: rReason,
+      created_by: activeUserSession.cpn
+    };
 
-      msgEl.className = "text-center text-sm font-bold block mt-4 " + (res.success ? 'text-emerald-600' : 'text-red-500');
-      msgEl.innerText = res.message;
-      msgEl.classList.remove('hidden');
+    if (activeUserSession.hasExistingOrder) {
+      const { error } = await supabase1
+        .from('orders')
+        .update(payload)
+        .eq('cpn_no', activeUserSession.cpn);
 
-      if (res.success) {
-        setTimeout(function () { msgEl.classList.add('hidden'); }, 4000);
+      if (error) throw error;
+    } else {
+      var uniqueNo = "ORD-" + activeUserSession.cpn + "-" + Date.now().toString().slice(-6);
+      payload.unique_no = uniqueNo;
 
-        activeUserSession.hasExistingOrder = true;
-        activeUserSession.existingOrdD = dVal;
-        activeUserSession.existingOrdE = eVal;
-        activeUserSession.replaceQty = rQty;
-        activeUserSession.replaceReason = rReason;
-        activeUserSession.ordDate = "Just now";
-        
-        localStorage.setItem('wowdrops_customer_session', JSON.stringify(activeUserSession));
-        
-        if (res.uniqueNo) activeUserSession.uniqueNo = res.uniqueNo;
-        if (res.rowIdx) {
-          if (!activeUserSession.rowCache) activeUserSession.rowCache = {};
-          activeUserSession.rowCache.ord = res.rowIdx;
-        }
-        
-        var poDetails = document.getElementById('po-details');
-        var poEmpty = document.getElementById('po-empty-msg');
+      const { error } = await supabase1
+        .from('orders')
+        .insert([payload]);
 
-        if (poDetails) poDetails.classList.remove('hidden');
-        if (poEmpty) poEmpty.classList.add('hidden');
-
-        document.getElementById('po-date').innerText = "Just now";
-        document.getElementById('po-cans').innerText = dVal;
-        document.getElementById('po-empties').innerText = eVal;
-
-        var poRepContainer = document.getElementById('po-rep-container');
-        var poRepText = document.getElementById('po-rep-text');
-
-        if (rQty > 0 && poRepContainer && poRepText) {
-          poRepText.innerText = rQty + " Replacement(s) (" + rReason + ")";
-          poRepContainer.classList.remove('hidden');
-        } else if (poRepContainer) {
-          poRepContainer.classList.add('hidden');
-        }
-
-        toggleOrderEditMode(false);
-      }
-    },
-    function (err) {
-      toggleButtonState('btn-submit-order', false, 'Submit Request');
-      showError(msgEl, "Network error: Please check your connection and try again.");
+      if (error) throw error;
+      activeUserSession.uniqueNo = uniqueNo;
     }
-  );
+
+    var btn = document.getElementById('btn-submit-order');
+    btn.disabled = false;
+    btn.style.opacity = '1.0';
+    btn.innerHTML = 'Submit Request';
+    btn.classList.remove('ring-2', 'ring-rose-400', 'ring-offset-2');
+    
+    window.pendingReplaceQty = null;
+    window.pendingReplaceReason = null;
+
+    msgEl.className = "text-center text-sm font-bold block mt-4 text-emerald-600";
+    msgEl.innerText = activeUserSession.hasExistingOrder ? "Order updated successfully!" : "Order placed successfully!";
+    msgEl.classList.remove('hidden');
+    setTimeout(function () { msgEl.classList.add('hidden'); }, 4000);
+
+    activeUserSession.hasExistingOrder = true;
+    activeUserSession.existingOrdD = dVal;
+    activeUserSession.existingOrdE = eVal;
+    activeUserSession.replaceQty = rQty;
+    activeUserSession.replaceReason = rReason;
+    activeUserSession.ordDate = "Just now";
+    
+    localStorage.setItem('wowdrops_customer_session', JSON.stringify(activeUserSession));
+    
+    var poDetails = document.getElementById('po-details');
+    var poEmpty = document.getElementById('po-empty-msg');
+
+    if (poDetails) poDetails.classList.remove('hidden');
+    if (poEmpty) poEmpty.classList.add('hidden');
+
+    document.getElementById('po-date').innerText = "Just now";
+    document.getElementById('po-cans').innerText = dVal;
+    document.getElementById('po-empties').innerText = eVal;
+
+    var poRepContainer = document.getElementById('po-rep-container');
+    var poRepText = document.getElementById('po-rep-text');
+
+    if (rQty > 0 && poRepContainer && poRepText) {
+      poRepText.innerText = rQty + " Replacement(s) (" + rReason + ")";
+      poRepContainer.classList.remove('hidden');
+    } else if (poRepContainer) {
+      poRepContainer.classList.add('hidden');
+    }
+
+    toggleOrderEditMode(false);
+
+  } catch (err) {
+    toggleButtonState('btn-submit-order', false, 'Submit Request');
+    showError(msgEl, "Network error: " + err.message);
+  }
 }
 
 function openReplacementModal() {
