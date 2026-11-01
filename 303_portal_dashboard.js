@@ -80,18 +80,12 @@ async function refreshCustomerSessionData(cpn) {
       .eq('cpn_no', cpn)
       .maybeSingle();
 
+    // ADDED: apartment, block, door, poc1, con1 to the select query
     const { data: custData } = await supabase1
       .from('ac_customers')
-      .select('can_deposit, maximum_ord_d, maximum_ord_e, final_status, mail_id, con2, default_rate')
+      .select('can_deposit, maximum_ord_d, maximum_ord_e, final_status, mail_id, con2, default_rate, apartment, block, door, poc1, con1, overdue_waiver, waiver_request, waiver_date, payment_remark')
       .eq('cpn_no', cpn)
       .maybeSingle();
-
-    /*const { data: canBalData } = await supabase1
-      .from('customer_can_balance')
-      .select('*')
-      .eq('cpn_no', cpn)
-      .maybeSingle();
-    */
 
     if (custData && String(custData.final_status).trim().toUpperCase() === 'INACTIVE') {
         localStorage.removeItem('wowdrops_customer_session');
@@ -108,9 +102,7 @@ async function refreshCustomerSessionData(cpn) {
     activeUserSession.currentMon = outstandingData ? (Number(outstandingData.current_month_pending) || 0) : 0;
     activeUserSession.lastMon = outstandingData ? (Number(outstandingData.m1_pending) || 0) : 0;
     activeUserSession.older = outstandingData ? ((Number(outstandingData.m2_pending) || 0) + (Number(outstandingData.old_pending) || 0)) : 0;
-    //activeUserSession.advance = outstandingData ? (Number(outstandingData.advance_amount) || Number(outstandingData.can_deposit) || 0) : (custData ? (Number(custData.can_deposit) || 0) : 0);
 
-    //activeUserSession.cansWithCustomer = canBalData ? ((canBalData.filled_vj_held || 0) + (canBalData.filled_nvj_held || 0)) : 0;
     activeUserSession.cansWithCustomer = (Number(outstandingData.cans) || 0);
     activeUserSession.advance = custData ? (Number(custData.can_deposit) || 0) : 0;
     activeUserSession.maxClientD = custData && custData.maximum_ord_d !== null ? Number(custData.maximum_ord_d) : 9999;
@@ -118,6 +110,21 @@ async function refreshCustomerSessionData(cpn) {
     activeUserSession.email = custData ? (custData.mail_id || "") : "";
     activeUserSession.whatsapp = custData ? (custData.con2 || "") : "";
     activeUserSession.defaultRate = custData ? (Number(custData.default_rate) || 0) : 0;
+
+    // OVERDUE & WAIVER DATA
+    activeUserSession.overdueWaiver = custData ? (custData.overdue_waiver === true || String(custData.overdue_waiver).toUpperCase() === 'TRUE') : false;
+    activeUserSession.waiverRequest = custData ? (custData.waiver_request === true || String(custData.waiver_request).toUpperCase() === 'TRUE') : false;
+    activeUserSession.waiverDate = custData && custData.waiver_date !== null ? Number(custData.waiver_date) : 15;
+    activeUserSession.paymentRemark = custData ? (custData.payment_remark || "") : "";
+
+    // ADDED: Silent sync for missing master data fields
+    if (custData) {
+      activeUserSession.apartment = custData.apartment || '';
+      activeUserSession.block = custData.block || '';
+      activeUserSession.door = custData.door || '';
+      if (custData.poc1) activeUserSession.name = custData.poc1;
+      if (custData.con1) activeUserSession.phone = custData.con1;
+    }
 
     localStorage.setItem('wowdrops_customer_session', JSON.stringify(activeUserSession));
 
@@ -141,6 +148,7 @@ async function refreshCustomerSessionData(cpn) {
     }
   }
 }
+
 
 // Helper to fetch global supply limits from Supabase 'setup' table
 async function getSupabaseSupplyConfig() {
@@ -280,6 +288,41 @@ function renderFinancialWidget() {
   var baseMaxE = ((activeUserSession.maxClientE !== undefined && activeUserSession.maxClientE !== null) ? activeUserSession.maxClientE : 9999) + pendingBonus;
   var conf = activeUserSession.supplyConfig;
 
+  // --- NEW OVERDUE BLOCK LOGIC ---
+  var currentDay = new Date().getDate();
+  var blockedByOlder = (activeUserSession.older > 0) && !activeUserSession.overdueWaiver;
+  var blockedByLastMonth = (activeUserSession.lastMon > 0) && !activeUserSession.waiverRequest && (currentDay >= activeUserSession.waiverDate);
+  var isPaymentBlocked = blockedByOlder || blockedByLastMonth;
+
+  if (isPaymentBlocked) {
+    baseMaxD = 0; 
+    baseMaxE = 0;
+    
+    var blockMsg = (activeUserSession.paymentRemark ? activeUserSession.paymentRemark + ". " : "") + "Ordering is disabled due to pending dues. Please clear your outstanding balance.";
+    
+    var supplyBanner = document.getElementById('supply-limit-banner');
+    supplyBanner.classList.remove('hidden');
+    supplyBanner.innerHTML = "<div class='bg-rose-50 text-rose-800 p-3 rounded-xl text-xs font-bold border border-rose-200 flex items-start space-x-2 shadow-sm'><svg class='w-5 h-5 text-rose-500 shrink-0 mt-0.5' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'></path></svg><span>" + blockMsg + "</span></div>";
+    
+    var submitBtn = document.getElementById('btn-submit-order');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+  }
+  // --- 5-DAY WARNING MODAL LOGIC ---
+  if (!isPaymentBlocked && activeUserSession.lastMon > 0 && !activeUserSession.waiverRequest) {
+    var daysUntilWaiver = activeUserSession.waiverDate - currentDay;
+    
+    if (daysUntilWaiver > 0 && daysUntilWaiver <= 5) {
+      document.getElementById('waiver-warning-days').innerText = daysUntilWaiver;
+      var warningModal = document.getElementById('waiver-warning-modal');
+      warningModal.classList.remove('hidden');
+      warningModal.classList.add('flex');
+    }
+  }
+  // -------------------------------
+
   var isGlobalConstraining = conf && conf.isOn && (conf.limitActive || conf.isSoldOut);
   var globalLimit = isGlobalConstraining ? conf.globalMax : 9999;
 
@@ -313,6 +356,12 @@ function renderFinancialWidget() {
     btn2.disabled = window.currentMaxOrdE < 2;
     btn3.disabled = window.currentMaxOrdE < 3;
   }
+}
+
+function closeWaiverWarningModal() {
+  var modal = document.getElementById('waiver-warning-modal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
 }
 
 function toggleOrderEditMode(isEditing) {
@@ -492,6 +541,20 @@ async function processOrderSubmission() {
   toggleButtonState('btn-submit-order', true, 'Processing...');
 
   try {
+    // HARD STOP: Overdue Validation
+    var currentDay = new Date().getDate();
+    var blockedByOlder = (activeUserSession.older > 0) && !activeUserSession.overdueWaiver;
+    var blockedByLastMonth = (activeUserSession.lastMon > 0) && !activeUserSession.waiverRequest && (currentDay >= activeUserSession.waiverDate);
+    
+    if (blockedByOlder || blockedByLastMonth) {
+    var alertMsg = (activeUserSession.paymentRemark ? activeUserSession.paymentRemark + ". " : "") + "Pending dues must be cleared.";
+    alert("Ordering blocked: " + alertMsg);
+    return;
+  }
+
+    var dVal = parseInt(document.getElementById('input-ord-d').value) || 0;
+    // HARD STOP END
+
     var todayStr = new Date().toISOString().split('T')[0];
     var currentRate = activeUserSession.defaultRate || 0;
     var totalAmt = dVal * currentRate;
@@ -516,24 +579,18 @@ async function processOrderSubmission() {
       created_by: activeUserSession.cpn
     };
 
-    if (activeUserSession.hasExistingOrder) {
-      const { error } = await supabase1
-        .from('orders')
-        .update(payload)
-        .eq('cpn_no', activeUserSession.cpn);
-
-      if (error) throw error;
-    } else {
-      var uniqueNo = "ORD-" + activeUserSession.cpn + "-" + Date.now().toString().slice(-6);
-      payload.unique_no = uniqueNo;
-
-      const { error } = await supabase1
-        .from('orders')
-        .insert([payload]);
-
-      if (error) throw error;
-      activeUserSession.uniqueNo = uniqueNo;
+    // Always ensure a unique_no exists in the payload for inserts
+    if (!activeUserSession.uniqueNo) {
+      activeUserSession.uniqueNo = "ORD-" + activeUserSession.cpn + "-" + Date.now().toString().slice(-6);
     }
+    payload.unique_no = activeUserSession.uniqueNo;
+
+    // UPSERT: Automatically inserts if cpn_no is new, or updates if cpn_no already exists
+    const { error } = await supabase1
+      .from('orders')
+      .upsert(payload, { onConflict: 'cpn_no' });
+
+    if (error) throw error;
 
     var btn = document.getElementById('btn-submit-order');
     btn.disabled = false;

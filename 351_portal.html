@@ -9,7 +9,8 @@
   <link rel="manifest" href="manifest_customer.json">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -27,8 +28,7 @@
     <div id="view-login" class="p-8 space-y-8 mt-12 md:my-auto fade-in">
       <div class="text-center flex flex-col items-center">
         <a href="index.html" target="_blank" rel="noopener noreferrer" class="shrink-0">
-          <img src="wowLogo.jpg" class="h-20 md:h-24 w-auto"
-            alt="Logo">
+          <img src="wowLogo.jpg" class="h-20 md:h-24 w-auto" alt="Logo">
         </a>
         <p class="text-slate-500 mt-2 font-medium">Customer Service Portal</p>
       </div>
@@ -38,9 +38,9 @@
       <div class="space-y-5 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Mobile No or CPN Number</label>
-          <input type="text" id="login-id" oninput="this.value = this.value.toUpperCase()" 
+          <input type="text" id="login-id" oninput="this.value = this.value.toUpperCase()"
             class="uppercase w-full mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition font-medium">
-          
+
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Password</label>
@@ -76,59 +76,77 @@
         <p class="text-sm text-slate-500 mt-1 font-medium">Verify your email to set a permanent password.</p>
       </div>
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-        
+
         <!-- Step 1a: Confirm Existing Email -->
         <div id="setup-step-1a" class="space-y-4">
           <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl text-center">
             <p class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Registered Email</p>
             <p id="setup-masked-email" class="text-lg font-black text-indigo-700">Loading...</p>
           </div>
-          <button onclick="sendSetupOTP(false)" id="btn-setup-otp-1" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-xl shadow-md active:scale-[0.98] transition">Send OTP</button>
+          <button onclick="sendSetupOTP(false)" id="btn-setup-otp-1"
+            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-xl shadow-md active:scale-[0.98] transition">Send
+            OTP</button>
           <div class="text-center mt-3">
-            <a href="javascript:void(0)" onclick="showSetupEmailChange()" class="text-xs font-bold text-slate-400 hover:text-indigo-600 transition underline decoration-slate-200 underline-offset-4">I don't have access to this email / Change Email</a>
+            <a href="javascript:void(0)" onclick="showSetupEmailChange()"
+              class="text-xs font-bold text-slate-400 hover:text-indigo-600 transition underline decoration-slate-200 underline-offset-4">I
+              don't have access to this email / Change Email</a>
           </div>
         </div>
 
         <!-- Step 1b: Add / Change Email (Security Check) -->
         <div id="setup-step-1b" class="space-y-4 hidden">
-          <div class="bg-amber-50 border-l-4 border-amber-500 p-3 rounded-r-xl text-xs font-bold text-amber-800 mb-4 shadow-sm">
+          <div
+            class="bg-amber-50 border-l-4 border-amber-500 p-3 rounded-r-xl text-xs font-bold text-amber-800 mb-4 shadow-sm">
             To change your email, please verify your registered mobile number.
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Registered Mobile No</label>
-            <input type="text" id="setup-verify-mobile" placeholder="e.g. 9876543210" class="w-full mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition font-medium text-sm">
+            <input type="text" id="setup-verify-mobile" placeholder="e.g. 9876543210"
+              class="w-full mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition font-medium text-sm">
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">New Email Address</label>
-            <input type="email" id="setup-new-email" placeholder="your@email.com" class="w-full mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition font-medium text-sm">
+            <input type="email" id="setup-new-email" placeholder="your@email.com"
+              class="w-full mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition font-medium text-sm">
           </div>
-          <button onclick="sendSetupOTP(true)" id="btn-setup-otp-2" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-xl shadow-md active:scale-[0.98] transition mt-2">Verify & Send OTP</button>
+          <button onclick="sendSetupOTP(true)" id="btn-setup-otp-2"
+            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-xl shadow-md active:scale-[0.98] transition mt-2">Verify
+            & Send OTP</button>
           <div class="text-center mt-3">
-            <a href="javascript:void(0)" id="link-cancel-email-change" onclick="showSetupEmailConfirm()" class="text-xs font-bold text-slate-400 hover:text-slate-600 transition">Cancel</a>
+            <a href="javascript:void(0)" id="link-cancel-email-change" onclick="showSetupEmailConfirm()"
+              class="text-xs font-bold text-slate-400 hover:text-slate-600 transition">Cancel</a>
           </div>
         </div>
 
         <!-- Step 2: OTP and Password -->
         <div id="setup-step-2" class="space-y-4 hidden">
           <div class="bg-emerald-50 border border-emerald-100 p-3 rounded-xl text-center mb-4">
-            <p class="text-xs font-bold text-emerald-700">OTP sent to <span id="setup-target-email" class="font-black"></span></p>
+            <p class="text-xs font-bold text-emerald-700">OTP sent to <span id="setup-target-email"
+                class="font-black"></span></p>
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">6-Digit OTP</label>
-            <input type="number" id="setup-otp" class="w-full mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-center text-xl tracking-[0.5em] font-black outline-none focus:ring-2 focus:ring-indigo-500">
+            <input type="number" id="setup-otp"
+              class="w-full mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-center text-xl tracking-[0.5em] font-black outline-none focus:ring-2 focus:ring-indigo-500">
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mt-2">New Password</label>
-            <input type="password" id="new-pass-1" class="w-full mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition text-sm">
+            <input type="password" id="new-pass-1"
+              class="w-full mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition text-sm">
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mt-2">Confirm Password</label>
-            <input type="password" id="new-pass-2" class="w-full mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition text-sm">
+            <input type="password" id="new-pass-2"
+              class="w-full mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition text-sm">
           </div>
-          <button onclick="submitPasswordSetup()" id="btn-setup-save" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold p-4 rounded-xl shadow-md active:scale-[0.98] transition mt-4">Save Password</button>
+          <button onclick="submitPasswordSetup()" id="btn-setup-save"
+            class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold p-4 rounded-xl shadow-md active:scale-[0.98] transition mt-4">Save
+            Password</button>
         </div>
 
-        <button onclick="cancelPasswordSetup()" class="w-full bg-white border border-slate-300 text-slate-700 font-bold p-4 rounded-xl hover:bg-slate-50 transition mt-4 text-sm">Cancel & Return to Login</button>
+        <button onclick="cancelPasswordSetup()"
+          class="w-full bg-white border border-slate-300 text-slate-700 font-bold p-4 rounded-xl hover:bg-slate-50 transition mt-4 text-sm">Cancel
+          & Return to Login</button>
         <p id="pass-setup-err" class="text-sm text-red-500 text-center font-semibold mt-3 hidden"></p>
       </div>
     </div>
@@ -143,27 +161,38 @@
       <div id="fp-step-1" class="space-y-5 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Registered Mobile or CPN</label>
-          <input type="text" id="fp-id" class="w-full mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition font-medium">
+          <input type="text" id="fp-id"
+            class="w-full mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition font-medium">
         </div>
-        <button onclick="requestOTP()" id="btn-fp-otp" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-xl shadow-md active:scale-[0.98] transition">Send Reset OTP to Email</button>
-        <button onclick="switchView('view-login')" class="w-full bg-white border border-slate-300 text-slate-700 font-bold p-4 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition mt-2">Back to Login</button>
+        <button onclick="requestOTP()" id="btn-fp-otp"
+          class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-xl shadow-md active:scale-[0.98] transition">Send
+          Reset OTP to Email</button>
+        <button onclick="switchView('view-login')"
+          class="w-full bg-white border border-slate-300 text-slate-700 font-bold p-4 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition mt-2">Back
+          to Login</button>
         <p id="fp-err-1" class="text-sm text-red-500 text-center font-semibold hidden"></p>
       </div>
 
       <div id="fp-step-2" class="space-y-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hidden">
         <div class="bg-emerald-50 border border-emerald-100 p-3 rounded-xl text-center mb-2">
-            <p class="text-xs font-bold text-emerald-700">OTP sent to <span id="fp-masked-email" class="font-black"></span></p>
+          <p class="text-xs font-bold text-emerald-700">OTP sent to <span id="fp-masked-email"
+              class="font-black"></span></p>
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Enter 6-Digit OTP</label>
-          <input type="number" id="fp-otp-input" class="w-full mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-center text-xl tracking-[0.5em] font-black outline-none focus:ring-2 focus:ring-indigo-500">
+          <input type="number" id="fp-otp-input"
+            class="w-full mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-center text-xl tracking-[0.5em] font-black outline-none focus:ring-2 focus:ring-indigo-500">
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mt-2">New Password</label>
-          <input type="password" id="fp-new-pass" class="w-full mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition">
+          <input type="password" id="fp-new-pass"
+            class="w-full mt-2 p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition">
         </div>
-        <button onclick="verifyAndResetPassword()" id="btn-fp-reset" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold p-4 rounded-xl shadow-md active:scale-[0.98] transition mt-4">Verify & Reset Password</button>
-        <button onclick="switchView('view-login')" class="w-full bg-white border border-slate-300 text-slate-700 font-bold p-4 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition mt-2">Cancel</button>
+        <button onclick="verifyAndResetPassword()" id="btn-fp-reset"
+          class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold p-4 rounded-xl shadow-md active:scale-[0.98] transition mt-4">Verify
+          & Reset Password</button>
+        <button onclick="switchView('view-login')"
+          class="w-full bg-white border border-slate-300 text-slate-700 font-bold p-4 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition mt-2">Cancel</button>
         <p id="fp-err-2" class="text-sm text-red-500 text-center font-semibold hidden"></p>
       </div>
     </div>
@@ -238,8 +267,7 @@
         class="sticky top-0 z-50 glass-header py-1 px-4 text-white flex justify-between items-center shadow-lg border-b border-white/10">
         <div class="flex items-center gap-x-4">
           <a href="index.html" target="_blank" rel="noopener noreferrer" class="shrink-0">
-            <img src="wowLogo.jpg" class="h-12 md:h-16 w-auto"
-              alt="Logo">
+            <img src="wowLogo.jpg" class="h-12 md:h-16 w-auto" alt="Logo">
           </a>
           <div>
             <h4 class="font-bold text-lg tracking-tight disp-cust-name">Loading...</h4>
@@ -256,8 +284,10 @@
             </svg>
           </button>
 
-          <div id="dropdown-menu" class="hidden absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-2xl py-2 z-30 border border-slate-100 overflow-hidden">
-            <a href="javascript:void(0)" onclick="event.preventDefault(); triggerNotificationSetup(); toggleMenu();" class="block px-5 py-3 text-sm text-emerald-600 font-black hover:bg-slate-50 border-b border-slate-50 transition flex items-center justify-between">
+          <div id="dropdown-menu"
+            class="hidden absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-2xl py-2 z-30 border border-slate-100 overflow-hidden">
+            <a href="javascript:void(0)" onclick="event.preventDefault(); triggerNotificationSetup(); toggleMenu();"
+              class="block px-5 py-3 text-sm text-emerald-600 font-black hover:bg-slate-50 border-b border-slate-50 transition flex items-center justify-between">
               Enable Daily Alerts 🔔
             </a>
             <a href="javascript:void(0)" onclick="event.preventDefault(); openProfile(); toggleMenu();"
@@ -367,39 +397,75 @@
                 </path>
               </svg>
               <h6 class="font-extrabold text-slate-800 text-lg uppercase tracking-wide">ORDER</h6>
-              
+
               <!-- MINIMALIST QUICK ADD BOTTLES -->
               <div class="flex items-center gap-2.5 mr-1">
                 <button type="button" id="btn-quick-1" onclick="quickAddCans(1)"
-                  class="flex items-center justify-center outline-none group disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed active:scale-90 transition-all cursor-pointer" title="1 Can">
+                  class="flex items-center justify-center outline-none group disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed active:scale-90 transition-all cursor-pointer"
+                  title="1 Can">
                   <div class="h-5 flex items-center justify-center">
-                    <svg class="h-full w-auto text-indigo-500 group-hover:scale-110 transition-transform drop-shadow-sm" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="9.5" y="2" width="5" height="2" rx="0.5" fill="#6366F1"/>
-                      <path d="M15 4.5c1 1.5 2 2.5 2 4.5v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9c0-2 1-3 2-4.5V4h6v.5z" fill="#E0E7FF"/>
-                      <path d="M17 10v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10h8z" fill="#818CF8"/>
-                      <rect x="8" y="13" width="8" height="1.5" rx="0.5" fill="#4F46E5" opacity="0.3"/>
-                      <rect x="8" y="17" width="8" height="1.5" rx="0.5" fill="#4F46E5" opacity="0.3"/>
+                    <svg class="h-full w-auto text-indigo-500 group-hover:scale-110 transition-transform drop-shadow-sm"
+                      viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="9.5" y="2" width="5" height="2" rx="0.5" fill="#6366F1" />
+                      <path d="M15 4.5c1 1.5 2 2.5 2 4.5v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9c0-2 1-3 2-4.5V4h6v.5z"
+                        fill="#E0E7FF" />
+                      <path d="M17 10v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10h8z" fill="#818CF8" />
+                      <rect x="8" y="13" width="8" height="1.5" rx="0.5" fill="#4F46E5" opacity="0.3" />
+                      <rect x="8" y="17" width="8" height="1.5" rx="0.5" fill="#4F46E5" opacity="0.3" />
                     </svg>
                   </div>
                 </button>
 
                 <button type="button" id="btn-quick-2" onclick="quickAddCans(2)"
-                  class="flex items-center justify-center outline-none group disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed active:scale-90 transition-all cursor-pointer" title="2 Cans">
+                  class="flex items-center justify-center outline-none group disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed active:scale-90 transition-all cursor-pointer"
+                  title="2 Cans">
                   <div class="h-5 flex items-center justify-center">
-                    <svg class="h-full w-auto text-indigo-500 group-hover:scale-110 transition-transform drop-shadow-sm" viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <g transform="translate(8, 0)"><rect x="9.5" y="2" width="5" height="2" rx="0.5" fill="#6366F1"/><path d="M15 4.5c1 1.5 2 2.5 2 4.5v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9c0-2 1-3 2-4.5V4h6v.5z" fill="#E0E7FF"/><path d="M17 10v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10h8z" fill="#818CF8"/></g>
-                      <g transform="translate(-2, 2)"><rect x="9.5" y="2" width="5" height="2" rx="0.5" fill="#4F46E5"/><path d="M15 4.5c1 1.5 2 2.5 2 4.5v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9c0-2 1-3 2-4.5V4h6v.5z" fill="#C7D2FE"/><path d="M17 10v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10h8z" fill="#6366F1"/><rect x="8" y="13" width="8" height="1.5" rx="0.5" fill="#4338CA" opacity="0.4"/><rect x="8" y="17" width="8" height="1.5" rx="0.5" fill="#4338CA" opacity="0.4"/></g>
+                    <svg class="h-full w-auto text-indigo-500 group-hover:scale-110 transition-transform drop-shadow-sm"
+                      viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <g transform="translate(8, 0)">
+                        <rect x="9.5" y="2" width="5" height="2" rx="0.5" fill="#6366F1" />
+                        <path d="M15 4.5c1 1.5 2 2.5 2 4.5v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9c0-2 1-3 2-4.5V4h6v.5z"
+                          fill="#E0E7FF" />
+                        <path d="M17 10v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10h8z" fill="#818CF8" />
+                      </g>
+                      <g transform="translate(-2, 2)">
+                        <rect x="9.5" y="2" width="5" height="2" rx="0.5" fill="#4F46E5" />
+                        <path d="M15 4.5c1 1.5 2 2.5 2 4.5v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9c0-2 1-3 2-4.5V4h6v.5z"
+                          fill="#C7D2FE" />
+                        <path d="M17 10v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10h8z" fill="#6366F1" />
+                        <rect x="8" y="13" width="8" height="1.5" rx="0.5" fill="#4338CA" opacity="0.4" />
+                        <rect x="8" y="17" width="8" height="1.5" rx="0.5" fill="#4338CA" opacity="0.4" />
+                      </g>
                     </svg>
                   </div>
                 </button>
 
                 <button type="button" id="btn-quick-3" onclick="quickAddCans(3)"
-                  class="flex items-center justify-center outline-none group disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed active:scale-90 transition-all cursor-pointer" title="3 Cans">
+                  class="flex items-center justify-center outline-none group disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed active:scale-90 transition-all cursor-pointer"
+                  title="3 Cans">
                   <div class="h-5 flex items-center justify-center">
-                    <svg class="h-full w-auto text-indigo-500 group-hover:scale-110 transition-transform drop-shadow-sm" viewBox="0 0 36 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <g transform="translate(0, 0)"><rect x="9.5" y="2" width="5" height="2" rx="0.5" fill="#6366F1"/><path d="M15 4.5c1 1.5 2 2.5 2 4.5v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9c0-2 1-3 2-4.5V4h6v.5z" fill="#E0E7FF"/><path d="M17 10v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10h8z" fill="#818CF8"/></g>
-                      <g transform="translate(12, 0)"><rect x="9.5" y="2" width="5" height="2" rx="0.5" fill="#6366F1"/><path d="M15 4.5c1 1.5 2 2.5 2 4.5v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9c0-2 1-3 2-4.5V4h6v.5z" fill="#E0E7FF"/><path d="M17 10v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10h8z" fill="#818CF8"/></g>
-                      <g transform="translate(6, 4)"><rect x="9.5" y="2" width="5" height="2" rx="0.5" fill="#4F46E5"/><path d="M15 4.5c1 1.5 2 2.5 2 4.5v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9c0-2 1-3 2-4.5V4h6v.5z" fill="#C7D2FE"/><path d="M17 10v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10h8z" fill="#6366F1"/><rect x="8" y="13" width="8" height="1.5" rx="0.5" fill="#4338CA" opacity="0.4"/><rect x="8" y="17" width="8" height="1.5" rx="0.5" fill="#4338CA" opacity="0.4"/></g>
+                    <svg class="h-full w-auto text-indigo-500 group-hover:scale-110 transition-transform drop-shadow-sm"
+                      viewBox="0 0 36 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <g transform="translate(0, 0)">
+                        <rect x="9.5" y="2" width="5" height="2" rx="0.5" fill="#6366F1" />
+                        <path d="M15 4.5c1 1.5 2 2.5 2 4.5v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9c0-2 1-3 2-4.5V4h6v.5z"
+                          fill="#E0E7FF" />
+                        <path d="M17 10v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10h8z" fill="#818CF8" />
+                      </g>
+                      <g transform="translate(12, 0)">
+                        <rect x="9.5" y="2" width="5" height="2" rx="0.5" fill="#6366F1" />
+                        <path d="M15 4.5c1 1.5 2 2.5 2 4.5v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9c0-2 1-3 2-4.5V4h6v.5z"
+                          fill="#E0E7FF" />
+                        <path d="M17 10v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10h8z" fill="#818CF8" />
+                      </g>
+                      <g transform="translate(6, 4)">
+                        <rect x="9.5" y="2" width="5" height="2" rx="0.5" fill="#4F46E5" />
+                        <path d="M15 4.5c1 1.5 2 2.5 2 4.5v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9c0-2 1-3 2-4.5V4h6v.5z"
+                          fill="#C7D2FE" />
+                        <path d="M17 10v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10h8z" fill="#6366F1" />
+                        <rect x="8" y="13" width="8" height="1.5" rx="0.5" fill="#4338CA" opacity="0.4" />
+                        <rect x="8" y="17" width="8" height="1.5" rx="0.5" fill="#4338CA" opacity="0.4" />
+                      </g>
                     </svg>
                   </div>
                 </button>
@@ -421,12 +487,18 @@
             </div>
           </div>
           <!-- PENDING ORDER NOTIFICATION BANNER -->
-            <div id="pending-alert-banner" class="hidden bg-amber-50 border-l-4 border-amber-500 p-3 rounded-r-xl shadow-sm mb-4">
-              <div class="flex items-start">
-                <svg class="w-5 h-5 text-amber-500 mr-2 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <p class="text-xs font-bold text-amber-900 leading-snug">You currently have a pending order. You may modify it below.</p>
-              </div>
+          <div id="pending-alert-banner"
+            class="hidden bg-amber-50 border-l-4 border-amber-500 p-3 rounded-r-xl shadow-sm mb-4">
+            <div class="flex items-start">
+              <svg class="w-5 h-5 text-amber-500 mr-2 shrink-0 mt-0.5" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <p class="text-xs font-bold text-amber-900 leading-snug">You currently have a pending order. You may
+                modify it below.</p>
             </div>
+          </div>
           <div id="order-input-section" class="space-y-5">
             <div class="grid grid-cols-2 gap-4 relative">
               <div>
@@ -475,15 +547,20 @@
                 class="flex-1 w-full bg-indigo-600 text-white font-black py-3 rounded-xl shadow-md hover:bg-indigo-700 transition-all duration-150 active:scale-95 active:shadow-sm text-sm">Submit
                 Request</button>
             </div>
-            
+
             <!-- NEW: REPLACEMENT BADGE & TRIGGER -->
-            <div id="replacement-badge" class="hidden bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 mt-4 justify-between items-center shadow-sm">
-               <span id="replacement-badge-text" class="text-[11px] font-black text-emerald-800 uppercase tracking-wide"></span>
-               <button type="button" onclick="openReplacementModal()" class="text-emerald-600 hover:text-emerald-800 font-bold text-[10px] uppercase tracking-widest bg-emerald-100 px-2 py-1 rounded transition">Edit</button>
+            <div id="replacement-badge"
+              class="hidden bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 mt-4 justify-between items-center shadow-sm">
+              <span id="replacement-badge-text"
+                class="text-[11px] font-black text-emerald-800 uppercase tracking-wide"></span>
+              <button type="button" onclick="openReplacementModal()"
+                class="text-emerald-600 hover:text-emerald-800 font-bold text-[10px] uppercase tracking-widest bg-emerald-100 px-2 py-1 rounded transition">Edit</button>
             </div>
 
             <div class="text-center mt-3 border-t border-slate-100 pt-3">
-               <a href="javascript:void(0)" onclick="openReplacementModal()" class="text-[10px] font-bold text-slate-400 hover:text-rose-500 underline decoration-slate-200 underline-offset-4 transition">Report an issue / Request free replacement</a>
+              <a href="javascript:void(0)" onclick="openReplacementModal()"
+                class="text-[10px] font-bold text-slate-400 hover:text-rose-500 underline decoration-slate-200 underline-offset-4 transition">Report
+                an issue / Request free replacement</a>
             </div>
             <!-- --------------------------------- -->
 
@@ -511,8 +588,9 @@
             </div>
 
             <!-- Chevron arrow that will rotate -->
-            <svg id="icon-toggle-activity" class="w-5 h-5 hidden text-slate-400 transform transition-transform duration-300"
-              fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg id="icon-toggle-activity"
+              class="w-5 h-5 hidden text-slate-400 transform transition-transform duration-300" fill="none"
+              stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
             </svg>
 
@@ -545,7 +623,7 @@
                       <span id="po-empties" class="text-2xl font-black text-slate-800">0</span>
                     </div>
                   </div>
-                  
+
                   <!-- NEW: REPLACEMENT INFO IN PENDING WIDGET -->
                   <div id="po-rep-container"
                     class="hidden mt-3 mb-1 p-2 bg-amber-50 rounded-lg border border-amber-200 shadow-inner">
@@ -553,7 +631,7 @@
                         id="po-rep-text"></span></p>
                   </div>
                   <!-- --------------------------------------- -->
-    
+
                   <div id="po-status-badge"
                     class="mt-2 text-[10px] font-bold text-indigo-600 bg-indigo-50 p-1.5 rounded-md inline-block">
                     Awaiting Delivery</div>
@@ -720,7 +798,8 @@
     </div>
 
     <!-- EMAIL COLLECTION MODAL -->
-    <div id="email-modal" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-start pt-24 md:items-center md:pt-0 justify-center p-4 fade-in">
+    <div id="email-modal"
+      class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-start pt-24 md:items-center md:pt-0 justify-center p-4 fade-in">
       <div class="bg-white w-full max-w-sm rounded-[24px] shadow-2xl p-6 text-center space-y-4">
         <div class="mx-auto w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-2">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -746,37 +825,52 @@
     </div>
 
     <!-- NOTIFICATION PROMPT MODAL -->
-    <div id="notification-modal" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 fade-in">
+    <div id="notification-modal"
+      class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 fade-in">
       <div class="bg-white w-full max-w-sm rounded-[24px] shadow-2xl p-6 text-center space-y-4">
-        <div class="mx-auto w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-2">
+        <div
+          class="mx-auto w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-2">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+            </path>
           </svg>
         </div>
         <h3 class="font-extrabold text-xl text-slate-800">Stay Updated</h3>
-        <p class="text-xs text-slate-500 font-medium">Enable daily alerts to get instant reminders about your pending dues and delivery updates.</p>
+        <p class="text-xs text-slate-500 font-medium">Enable daily alerts to get instant reminders about your pending
+          dues and delivery updates.</p>
         <div class="flex gap-2 pt-2">
-          <button onclick="skipNotificationCapture()" class="flex-1 bg-white border border-slate-200 text-slate-500 font-bold p-3 rounded-xl hover:bg-slate-50 transition text-sm">Maybe Later</button>
-          <button onclick="acceptNotificationCapture()" class="flex-1 bg-emerald-600 text-white font-bold p-3 rounded-xl hover:bg-emerald-700 transition text-sm shadow-md">Enable Alerts</button>
+          <button onclick="skipNotificationCapture()"
+            class="flex-1 bg-white border border-slate-200 text-slate-500 font-bold p-3 rounded-xl hover:bg-slate-50 transition text-sm">Maybe
+            Later</button>
+          <button onclick="acceptNotificationCapture()"
+            class="flex-1 bg-emerald-600 text-white font-bold p-3 rounded-xl hover:bg-emerald-700 transition text-sm shadow-md">Enable
+            Alerts</button>
         </div>
       </div>
     </div>
     <div id="ios-pwa-warning" class="hidden bg-blue-50 border border-blue-200 p-4 rounded-xl shadow-sm mb-4">
       <div class="flex gap-3">
         <div class="text-blue-500 mt-0.5">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+          </svg>
         </div>
         <div>
           <h4 class="text-sm font-black text-blue-900 uppercase tracking-widest">iPhone Users</h4>
           <p class="text-xs font-bold text-blue-700 mt-1">To enable Delivery Alerts, you must install this app.</p>
-          <p class="text-xs font-medium text-blue-600 mt-1">Tap the <b>Share</b> icon below, then select <b>"Add to Home Screen"</b>. Open the app from your home screen to subscribe!</p>
+          <p class="text-xs font-medium text-blue-600 mt-1">Tap the <b>Share</b> icon below, then select <b>"Add to Home
+              Screen"</b>. Open the app from your home screen to subscribe!</p>
         </div>
       </div>
     </div>
-    
+
     <!-- PAYMENT MODAL -->
-    <div id="payment-modal" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
-      <div class="bg-white w-full max-w-sm max-h-[90vh] flex flex-col rounded-[24px] shadow-2xl overflow-hidden transform transition-all my-auto">
+    <div id="payment-modal"
+      class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
+      <div
+        class="bg-white w-full max-w-sm max-h-[90vh] flex flex-col rounded-[24px] shadow-2xl overflow-hidden transform transition-all my-auto">
         <div class="bg-emerald-500 p-5 text-white flex justify-between items-center shrink-0">
           <h3 class="font-extrabold text-lg flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -792,41 +886,62 @@
             </svg>
           </button>
         </div>
-        
+
         <!-- Scrollable content area inside the modal -->
         <div class="p-6 space-y-4 overflow-y-auto flex-1">
           <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Select Amount to Pay</p>
           <div class="space-y-3">
-            <label class="flex items-center justify-between p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">
-              <div class="flex items-center space-x-3"><input type="radio" name="pay-amt" value="older" onchange="updatePayInput(this)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"><span class="text-sm font-bold text-slate-700">Older Dues</span></div>
+            <label
+              class="flex items-center justify-between p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">
+              <div class="flex items-center space-x-3"><input type="radio" name="pay-amt" value="older"
+                  onchange="updatePayInput(this)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"><span
+                  class="text-sm font-bold text-slate-700">Older Dues</span></div>
               <span id="split-older" class="font-black text-slate-800">₹0</span>
             </label>
-            <label class="flex items-center justify-between p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">
-              <div class="flex items-center space-x-3"><input type="radio" name="pay-amt" value="lastMon" onchange="updatePayInput(this)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"><span class="text-sm font-bold text-slate-700">Last Month</span></div>
+            <label
+              class="flex items-center justify-between p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">
+              <div class="flex items-center space-x-3"><input type="radio" name="pay-amt" value="lastMon"
+                  onchange="updatePayInput(this)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"><span
+                  class="text-sm font-bold text-slate-700">Last Month</span></div>
               <span id="split-last" class="font-black text-slate-800">₹0</span>
             </label>
-            <label class="flex items-center justify-between p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">
-              <div class="flex items-center space-x-3"><input type="radio" name="pay-amt" value="previous" onchange="updatePayInput(this)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"><span class="text-sm font-bold text-slate-700">Previous Dues (Older + Last Month)</span></div>
+            <label
+              class="flex items-center justify-between p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">
+              <div class="flex items-center space-x-3"><input type="radio" name="pay-amt" value="previous"
+                  onchange="updatePayInput(this)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"><span
+                  class="text-sm font-bold text-slate-700">Previous Dues (Older + Last Month)</span></div>
               <span id="split-previous" class="font-black text-slate-800">₹0</span>
             </label>
-            <label class="flex items-center justify-between p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">
-              <div class="flex items-center space-x-3"><input type="radio" name="pay-amt" value="currentMon" onchange="updatePayInput(this)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"><span class="text-sm font-bold text-slate-700">Current Month</span></div>
+            <label
+              class="flex items-center justify-between p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">
+              <div class="flex items-center space-x-3"><input type="radio" name="pay-amt" value="currentMon"
+                  onchange="updatePayInput(this)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"><span
+                  class="text-sm font-bold text-slate-700">Current Month</span></div>
               <span id="split-curr" class="font-black text-slate-800">₹0</span>
             </label>
-            <label class="flex items-center justify-between p-3 border-2 border-emerald-100 bg-emerald-50/50 rounded-xl cursor-pointer hover:bg-emerald-50 transition">
-              <div class="flex items-center space-x-3"><input type="radio" name="pay-amt" value="total" checked onchange="updatePayInput(this)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"><span class="text-sm font-black text-emerald-900">Total Outstanding</span></div>
+            <label
+              class="flex items-center justify-between p-3 border-2 border-emerald-100 bg-emerald-50/50 rounded-xl cursor-pointer hover:bg-emerald-50 transition">
+              <div class="flex items-center space-x-3"><input type="radio" name="pay-amt" value="total" checked
+                  onchange="updatePayInput(this)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"><span
+                  class="text-sm font-black text-emerald-900">Total Outstanding</span></div>
               <span id="split-total" class="font-black text-emerald-700">₹0</span>
             </label>
           </div>
 
           <!-- THE NEW DISCLAIMER MESSAGE -->
-          <div class="bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-xs p-2.5 rounded-lg flex gap-2 items-start mt-2">
-            <svg class="w-4 h-4 shrink-0 mt-0.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <p><strong>Note:</strong> Any amount paid will automatically be adjusted against your oldest pending dues first.</p>
+          <div
+            class="bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-xs p-2.5 rounded-lg flex gap-2 items-start mt-2">
+            <svg class="w-4 h-4 shrink-0 mt-0.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p><strong>Note:</strong> Any amount paid will automatically be adjusted against your oldest pending dues
+              first.</p>
           </div>
 
           <div class="mt-4 pt-4 border-t border-slate-100">
-            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5 ml-1">Custom Amount / Confirm Amount (₹)</label>
+            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5 ml-1">Custom Amount
+              / Confirm Amount (₹)</label>
             <!-- REPLACED onfocus WITH oninput -->
             <input type="number" id="pay-custom-amt" oninput="handleCustomAmountInput(this)"
               class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition font-black text-xl text-slate-800">
@@ -892,80 +1007,130 @@
     </div>
   </div>
   <!-- REPLACEMENT MODAL (+/- VERSION) -->
-    <div id="replacement-modal" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-start pt-24 md:items-center md:pt-0 justify-center p-4 fade-in">
-      <div class="bg-white w-full max-w-sm rounded-[24px] shadow-2xl overflow-hidden relative">
-        <button onclick="closeReplacementModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 outline-none">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
-        <div class="p-6">
-          <div class="flex items-center gap-3 mb-5">
-             <div class="w-10 h-10 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center shrink-0">
-               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-             </div>
-             <div>
-               <h3 class="font-black text-lg text-slate-800 leading-tight">Request Replacement</h3>
-               <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Free of charge</p>
-             </div>
+  <div id="replacement-modal"
+    class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-start pt-24 md:items-center md:pt-0 justify-center p-4 fade-in">
+    <div class="bg-white w-full max-w-sm rounded-[24px] shadow-2xl overflow-hidden relative">
+      <button onclick="closeReplacementModal()"
+        class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 outline-none">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+      <div class="p-6">
+        <div class="flex items-center gap-3 mb-5">
+          <div class="w-10 h-10 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center shrink-0">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+              </path>
+            </svg>
           </div>
-          
-          <div class="space-y-5">
-             <div>
-               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5 ml-1">Number of cans to replace</label>
-               <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl p-1">
-                  <button type="button" onclick="adjustReplacementValue(-1)" class="w-10 h-10 flex items-center justify-center bg-white rounded-lg text-slate-700 font-extrabold text-xl shadow-sm active:scale-95 transition outline-none">-</button>
-                  <input type="number" id="input-replace-qty" min="0" value="0" disabled class="w-full bg-transparent text-center font-black text-2xl text-slate-800 outline-none">
-                  <button type="button" onclick="adjustReplacementValue(1)" class="w-10 h-10 flex items-center justify-center bg-white rounded-lg text-slate-700 font-extrabold text-xl shadow-sm active:scale-95 transition outline-none">+</button>
-                </div>
-             </div>
-             <div>
-               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5 ml-1">Reason for replacement</label>
-               <select id="input-replace-reason" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none transition font-bold text-sm text-slate-700 appearance-none">
-                 <option value="">-- Select Reason --</option>
-                 <option value="Water problem">Water Quality / Impurities</option>
-                 <option value="Leakage">Can Leakage</option>
-                 <option value="NVJ">Non-Validity Jar (NVJ/Expired)</option>
-               </select>
-             </div>
+          <div>
+            <h3 class="font-black text-lg text-slate-800 leading-tight">Request Replacement</h3>
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Free of charge</p>
           </div>
-          
-          <button onclick="saveReplacementToOrder()" class="w-full mt-6 bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-xl shadow-lg active:scale-[0.98] transition uppercase tracking-widest text-sm">
-            Attach to Order
-          </button>
         </div>
+
+        <div class="space-y-5">
+          <div>
+            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5 ml-1">Number of
+              cans to replace</label>
+            <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl p-1">
+              <button type="button" onclick="adjustReplacementValue(-1)"
+                class="w-10 h-10 flex items-center justify-center bg-white rounded-lg text-slate-700 font-extrabold text-xl shadow-sm active:scale-95 transition outline-none">-</button>
+              <input type="number" id="input-replace-qty" min="0" value="0" disabled
+                class="w-full bg-transparent text-center font-black text-2xl text-slate-800 outline-none">
+              <button type="button" onclick="adjustReplacementValue(1)"
+                class="w-10 h-10 flex items-center justify-center bg-white rounded-lg text-slate-700 font-extrabold text-xl shadow-sm active:scale-95 transition outline-none">+</button>
+            </div>
+          </div>
+          <div>
+            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5 ml-1">Reason for
+              replacement</label>
+            <select id="input-replace-reason"
+              class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none transition font-bold text-sm text-slate-700 appearance-none">
+              <option value="">-- Select Reason --</option>
+              <option value="Water problem">Water Quality / Impurities</option>
+              <option value="Leakage">Can Leakage</option>
+              <option value="NVJ">Non-Validity Jar (NVJ/Expired)</option>
+            </select>
+          </div>
+        </div>
+
+        <button onclick="saveReplacementToOrder()"
+          class="w-full mt-6 bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-xl shadow-lg active:scale-[0.98] transition uppercase tracking-widest text-sm">
+          Attach to Order
+        </button>
       </div>
     </div>
-    <!-- iOS INSTALL PROMPT MODAL -->
-    <div id="ios-install-prompt" class="fixed inset-x-0 bottom-0 z-[9999] bg-white rounded-t-[2rem] shadow-[0_-20px_50px_rgba(0,0,0,0.15)] p-6 hidden transform transition-transform border-t border-slate-200 fade-in">
-      <div class="flex flex-col items-center text-center">
-        <img src="wowLogo.jpg" class="w-16 h-16 rounded-2xl shadow-md border border-slate-100 mb-4">
-        <h4 class="font-black text-slate-800 text-xl">Install WOW DROPS</h4>
-        <p class="text-sm text-slate-500 font-medium mt-2 leading-snug px-4">Get daily booking reminders directly on your iPhone by adding this app to your Home Screen.</p>
-      </div>
-      <div class="mt-6 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-700 space-y-3">
-        <p class="flex items-center">
-          <span class="bg-indigo-100 text-indigo-700 w-6 h-6 rounded-full flex items-center justify-center text-xs mr-3 shrink-0">1</span> 
-          Tap the <svg class="w-6 h-6 text-indigo-600 mx-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> Share button below.
-        </p>
-        <p class="flex items-start">
-          <span class="bg-indigo-100 text-indigo-700 w-6 h-6 rounded-full flex items-center justify-center text-xs mr-3 shrink-0">2</span> 
-          <span>Scroll down and select <span class="bg-white border border-slate-200 px-2 py-1 rounded shadow-sm text-xs ml-1 inline-block mt-1">➕ Add to Home Screen</span></span>
-        </p>
-      </div>
-      <button onclick="document.getElementById('ios-install-prompt').classList.add('hidden')" class="w-full mt-6 bg-slate-200 hover:bg-slate-300 text-slate-700 font-black p-4 rounded-xl transition text-sm uppercase tracking-widest">Dismiss</button>
+  </div>
+  <!-- iOS INSTALL PROMPT MODAL -->
+  <div id="ios-install-prompt"
+    class="fixed inset-x-0 bottom-0 z-[9999] bg-white rounded-t-[2rem] shadow-[0_-20px_50px_rgba(0,0,0,0.15)] p-6 hidden transform transition-transform border-t border-slate-200 fade-in">
+    <div class="flex flex-col items-center text-center">
+      <img src="wowLogo.jpg" class="w-16 h-16 rounded-2xl shadow-md border border-slate-100 mb-4">
+      <h4 class="font-black text-slate-800 text-xl">Install WOW DROPS</h4>
+      <p class="text-sm text-slate-500 font-medium mt-2 leading-snug px-4">Get daily booking reminders directly on your
+        iPhone by adding this app to your Home Screen.</p>
     </div>
+    <div class="mt-6 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-bold text-slate-700 space-y-3">
+      <p class="flex items-center">
+        <span
+          class="bg-indigo-100 text-indigo-700 w-6 h-6 rounded-full flex items-center justify-center text-xs mr-3 shrink-0">1</span>
+        Tap the <svg class="w-6 h-6 text-indigo-600 mx-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+        </svg> Share button below.
+      </p>
+      <p class="flex items-start">
+        <span
+          class="bg-indigo-100 text-indigo-700 w-6 h-6 rounded-full flex items-center justify-center text-xs mr-3 shrink-0">2</span>
+        <span>Scroll down and select <span
+            class="bg-white border border-slate-200 px-2 py-1 rounded shadow-sm text-xs ml-1 inline-block mt-1">➕ Add to
+            Home Screen</span></span>
+      </p>
+    </div>
+    <button onclick="document.getElementById('ios-install-prompt').classList.add('hidden')"
+      class="w-full mt-6 bg-slate-200 hover:bg-slate-300 text-slate-700 font-black p-4 rounded-xl transition text-sm uppercase tracking-widest">Dismiss</button>
+  </div>
+  <!-- Upcoming Block Warning Modal -->
+  <div id="waiver-warning-modal"
+    class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-fade-in-up">
+      <div class="bg-amber-50 p-4 border-b border-amber-100 flex items-center space-x-3">
+        <svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+          </path>
+        </svg>
+        <h3 class="text-lg font-bold text-amber-800">Action Required</h3>
+      </div>
+      <div class="p-5 text-slate-600 text-sm">
+        <p class="mb-3">You have pending dues from the previous month. To ensure uninterrupted service, please clear
+          your outstanding balance.</p>
+        <p class="font-semibold text-rose-600 bg-rose-50 p-2 rounded border border-rose-100">Ordering will be disabled
+          in <span id="waiver-warning-days" class="font-black text-lg"></span> day(s).</p>
+      </div>
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+        <button onclick="closeWaiverWarningModal()"
+          class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg shadow transition-colors">I
+          Understand</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
 
   <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-      navigator.serviceWorker.register('firebase-messaging-sw.js');
-    });
-  }
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('firebase-messaging-sw.js');
+      });
+    }
   </script>
-  
+
   <!-- Link to external JS Modules -->
   <script src="supabase_config.js?v=4.2" defer></script>
   <script src="301_portal_core.js?v=4.2" defer></script>
