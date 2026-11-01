@@ -10,7 +10,8 @@ input[type=number]::-webkit-outer-spin-button {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: rgba(41, 37, 36, 0.8);
+  /* Deep Indigo (matches Tailwind indigo-900) with 85% opacity for the glass effect */
+  background: rgba(49, 46, 129, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   color: #ffffff;
@@ -19,7 +20,8 @@ input[type=number]::-webkit-outer-spin-button {
 
 .glass-header .subtext, 
 .glass-header small {
-  color: #d6d3d1;
+  /* Soft indigo-200 tint for subtitles instead of gray */
+  color: #c7d2fe; 
 }
 
 
@@ -48,4 +50,16 @@ input[type=number]::-webkit-outer-spin-button {
   0% { opacity: 1; }
   50% { opacity: 0.5; }
   100% { opacity: 1; }
+}
+
+/* Hide scrollbars completely but keep scroll functionality */
+::-webkit-scrollbar {
+  width: 0;
+  background: transparent;
+  display: none;
+}
+
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and older Edge */
 }

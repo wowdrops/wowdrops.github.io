@@ -21,8 +21,7 @@
 
 <body class="font-sans antialiased text-slate-900">
 
-  <div id="app-container"
-    class="max-w-md mx-auto min-h-screen bg-green-50 flex flex-col justify-between relative shadow-2xl">
+  <div id="app-container" class="max-w-md mx-auto min-h-screen bg-slate-50 flex flex-col justify-between relative shadow-2xl">
 
     <!-- LOGIN VIEW -->
     <div id="view-login" class="p-8 space-y-8 mt-12 md:my-auto fade-in">
@@ -262,7 +261,7 @@
     </div>
 
     <!-- DASHBOARD VIEW -->
-    <div id="view-dashboard" class="hidden flex flex-col h-screen fade-in relative">
+    <div id="view-dashboard" class="hidden flex flex-col h-screen overflow-y-auto fade-in relative">
       <div
         class="sticky top-0 z-50 glass-header py-1 px-4 text-white flex justify-between items-center shadow-lg border-b border-white/10">
         <div class="flex items-center gap-x-4">
@@ -327,7 +326,7 @@
         </div>
       </div>
       <!-- DASHBOARD SCROLL AREA -->
-      <div class="flex-1 flex flex-col p-5 overflow-y-auto pb-10">
+      <div class="flex-1 flex flex-col p-5 pb-10">
         <div id="payment-status-banner" class="mb-4 hidden"></div>
         <!-- DARK BLUE SUMMARY CARD -->
         <div
@@ -589,7 +588,7 @@
 
             <!-- Chevron arrow that will rotate -->
             <svg id="icon-toggle-activity"
-              class="w-5 h-5 hidden text-slate-400 transform transition-transform duration-300" fill="none"
+              class="w-5 h-5 text-slate-400 transform transition-transform duration-300" fill="none"
               stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
             </svg>
