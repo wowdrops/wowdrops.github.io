@@ -124,7 +124,7 @@ window.loadDashboardData = async function (forceRefresh) {
       ordersRes, setupRes, deliveryRes, salesRes, paysRes, outstandingRes, customersRes, logsRes       
     ] = await Promise.all([
       supa.from('orders').select('cpn_no, ord_d, ord_e, rate, amount, pending_qty, replace_qty'),
-      supa.from('setup').select('key, value').in('key', ['PER_DAY_COUNT', 'RESTRICT_QTY', 'MIN_ENTRY_QTY', 'SUPPLY_STATUS']),
+      supa.from('setup').select('key, value').in('key', ['per day can count', 'lookup restrict can qty', 'minimum entry qty', 'per day onoff']),
       supa.from('deliveries').select('cpn_no,act_d,act_e,ord_d,rate,default_rate,delivery_entered_at,door_delivery_link,status,door_qc,act_d_vj,act_d_nvj,act_e_vj,act_e_nvj'),
       supa.from('sales').select('cpn_no, del_date, act_d, act_e, amount').lte('del_date', todayStartStr).order('del_date', { ascending: false }).limit(1000),
       supa.from('pays').select('cpn_no, payment_date, amount').lte('payment_date', todayStartStr).order('payment_date', { ascending: false }).limit(1000),

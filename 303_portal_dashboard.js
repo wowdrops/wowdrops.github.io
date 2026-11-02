@@ -149,24 +149,26 @@ async function refreshCustomerSessionData(cpn) {
   }
 }
 
-
 // Helper to fetch global supply limits from Supabase 'setup' table
 async function getSupabaseSupplyConfig() {
   try {
     const { data, error } = await supabase1
       .from('setup')
       .select('key, value')
-      .in('key', ['PER_DAY_COUNT', 'RESTRICT_QTY', 'MIN_ENTRY_QTY', 'SUPPLY_STATUS']);
+      .in('key', ['per day can count', 'lookup restrict can qty', 'minimum entry qty', 'per day onoff']);
 
     if (error || !data) return { isOn: false, isSoldOut: false, limitActive: false, globalMax: 9999 };
 
     let configMap = {};
     data.forEach(row => { configMap[row.key] = row.value; });
 
-    var perDayCount = Number(configMap['PER_DAY_COUNT']) || 210;
-    var restrictQty = Number(configMap['RESTRICT_QTY']) || 25;
-    var minEntryQty = Number(configMap['MIN_ENTRY_QTY']) || 1;
-    var isOn = String(configMap['SUPPLY_STATUS'] || "").trim().toUpperCase() === 'ON';
+    var perDayCount = Number(configMap['per day can count']) || 210;
+    var restrictQty = Number(configMap['lookup restrict can qty']) || 25;
+    var minEntryQty = Number(configMap['minimum entry qty']) || 1;
+    
+    // Check if the master switch is ON or TRUE
+    var onOffValue = String(configMap['per day onoff'] || "").trim().toUpperCase();
+    var isOn = (onOffValue === 'ON' || onOffValue === 'TRUE');
 
     const { data: allOrders } = await supabase1
       .from('orders')
@@ -639,7 +641,14 @@ async function processOrderSubmission() {
 
   } catch (err) {
     toggleButtonState('btn-submit-order', false, 'Submit Request');
-    showError(msgEl, "Network error: " + err.message);
+    // Check if the error came from our new database trigger
+    if (err.message && err.message.includes('DAILY_LIMIT_REACHED')) {
+      // Clean up the Supabase error text to just show our custom message
+      var cleanMsg = err.message.split('DAILY_LIMIT_REACHED:')[1] || err.message;
+      showError(msgEl, cleanMsg.trim());
+    } else {
+      showError(msgEl, "Error: " + err.message);
+    }
   }
 }
 
