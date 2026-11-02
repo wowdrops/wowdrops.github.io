@@ -83,7 +83,7 @@ function checkNotificationStatus() {
   var skippedTime = localStorage.getItem('notification_skipped_time');
   if (skippedTime) {
     var daysElapsed = (new Date().getTime() - parseInt(skippedTime)) / (1000 * 60 * 60 * 24);
-    if (daysElapsed < 2) return; 
+    if (daysElapsed < 1) return; 
   }
   setTimeout(function () { 
       var notifModal = document.getElementById('notification-modal');
