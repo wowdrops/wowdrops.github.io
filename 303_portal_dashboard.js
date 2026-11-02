@@ -334,7 +334,10 @@ function renderFinancialWidget() {
     activeLimitD = globalLimit;
     window.limitReasonD = conf.isSoldOut ? "We are completely sold out of Cans for today. Maximum allowed is" : "Due to high demand, Cans are currently restricted to a maximum of";
   }
-  window.currentMaxOrdD = Math.max(activeLimitD, activeUserSession.existingOrdD || 0);
+  
+  // FIX 1: Only allow existing orders to bypass the 0 limit. New orders strictly use activeLimitD.
+  var safeExistingD = activeUserSession.hasExistingOrder ? (activeUserSession.existingOrdD || 0) : 0;
+  window.currentMaxOrdD = Math.max(activeLimitD, safeExistingD);
 
   var activeLimitE = baseMaxE;
   window.limitReasonE = "You have exceeded your personal limit for Empties. Maximum allowed is";
@@ -342,7 +345,18 @@ function renderFinancialWidget() {
     activeLimitE = globalLimit;
     window.limitReasonE = conf.isSoldOut ? "Daily capacity reached. Empties return is currently restricted to" : "Due to high demand, Empties are currently restricted to a maximum of";
   }
-  window.currentMaxOrdE = Math.max(activeLimitE, activeUserSession.existingOrdE || 0);
+  
+  var safeExistingE = activeUserSession.hasExistingOrder ? (activeUserSession.existingOrdE || 0) : 0;
+  window.currentMaxOrdE = Math.max(activeLimitE, safeExistingE);
+
+  // FIX 2: Physically disable the submit button if sold out AND it's a new order
+  if (isGlobalConstraining && conf.isSoldOut && !activeUserSession.hasExistingOrder) {
+    var submitBtn = document.getElementById('btn-submit-order');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+  }
 
   var inputD = document.getElementById('input-ord-d');
   var inputE = document.getElementById('input-ord-e');
