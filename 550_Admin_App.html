@@ -7,6 +7,10 @@
   <link rel="icon" type="image/x-icon" href="wowLogo_admin.jpg">
   <link rel="manifest" href="manifest_admin.json">
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FIREBASE SDK SCRIPTS REQUIRED FOR NOTIFICATIONS -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
   tailwind.config = {
     darkMode: 'class', 
@@ -55,6 +59,39 @@
 </div>
 
 <div data-include="566_Admin_360_Modal.html"></div>
+<!-- ADMIN NOTIFICATION PROMPT MODAL -->
+<div id="admin-notification-modal" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 fade-in">
+  <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[24px] shadow-2xl p-6 text-center space-y-4 border border-slate-200 dark:border-slate-800">
+    <div class="mx-auto w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-2">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+      </svg>
+    </div>
+    <h3 class="font-extrabold text-xl text-slate-800 dark:text-white">Admin System Alerts</h3>
+    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Enable daily alerts to get instant notifications for batch transfers, escalations, and system updates.</p>
+    <div class="flex gap-2 pt-2">
+      <button onclick="skipAdminNotificationCapture()" class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 font-bold p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition text-sm">Maybe Later</button>
+      <button onclick="acceptAdminNotificationCapture()" class="flex-1 bg-emerald-600 dark:bg-emerald-700 text-white font-bold p-3 rounded-xl hover:bg-emerald-700 dark:hover:bg-emerald-600 transition text-sm shadow-md">Enable Alerts</button>
+    </div>
+  </div>
+</div>
+
+<!-- UNBLOCK INSTRUCTIONS MODAL -->
+<div id="unblock-guide-modal" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 fade-in">
+  <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[24px] shadow-2xl p-6 text-center space-y-4 border border-slate-200 dark:border-slate-800">
+    <div class="mx-auto w-12 h-12 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full flex items-center justify-center mb-2">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+    </div>
+    <h3 class="font-extrabold text-xl text-slate-800 dark:text-white">How to Unblock Alerts</h3>
+    <div class="text-left text-sm text-slate-600 dark:text-slate-400 font-medium space-y-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+      <p>1. Tap the <strong>padlock icon 🔒</strong> or <strong>settings icon</strong> in your browser's address bar at the top.</p>
+      <p>2. Find <strong>Notifications</strong> or <strong>Site Settings</strong>.</p>
+      <p>3. Change the permission from <strong>Block</strong> to <strong>Allow</strong>.</p>
+      <p>4. Refresh this page.</p>
+    </div>
+    <button onclick="document.getElementById('unblock-guide-modal').classList.add('hidden')" class="w-full bg-slate-800 dark:bg-slate-700 text-white font-bold p-3 rounded-xl hover:bg-slate-900 dark:hover:bg-slate-600 transition text-sm shadow-md">Got it</button>
+  </div>
+</div>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
@@ -66,6 +103,7 @@
 <script>
   const jsFiles = [
     "supabase_config.js",
+    "500_Admin_Notifications_JS.js",
     "551_Admin_Auth_JS.js",
     "553_Admin_Header_JS.js",
     "555_Admin_Dashboard_JS.js",

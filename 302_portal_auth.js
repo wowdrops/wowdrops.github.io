@@ -364,7 +364,21 @@ async function verifyAndResetPassword() {
 // ==========================================
 // REMAINDER FUNCTIONS (Untouched)
 // ==========================================
-function logoutCustomer() {
+async function logoutCustomer() {
+  // NEW: Delete device token on logout
+  if (activeUserSession && activeUserSession.cpn) {
+     const deviceId = localStorage.getItem('wowdrops_device_id');
+     if (deviceId) {
+       try {
+         await supabase1
+           .from('push_subscriptions')
+           .delete()
+           .eq('cpn_no', activeUserSession.cpn)
+           .eq('device_id', deviceId);
+       } catch(e) { console.error("Logout push cleanup failed", e); }
+     }
+  }
+
   localStorage.removeItem('wowdrops_customer_session');
   activeUserSession = null;
   document.getElementById('dropdown-menu').classList.add('hidden');
@@ -448,9 +462,10 @@ function openChangePassword() {
 function checkEmailCollection() {
   if (!activeUserSession.email && sessionStorage.getItem('email_skipped') !== 'true') {
     setTimeout(function () { document.getElementById('email-modal').classList.remove('hidden'); }, 1500);
-  } else {
-    if (typeof checkNotificationStatus === "function") checkNotificationStatus();
   }
+   
+  if (typeof checkNotificationStatus === "function") checkNotificationStatus();
+  
 }
 
 function skipEmailCapture() {

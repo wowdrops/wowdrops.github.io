@@ -132,6 +132,7 @@ async function refreshCustomerSessionData(cpn) {
     renderFinancialWidget();
     
     if (typeof checkEmailCollection === "function") checkEmailCollection();
+    if (typeof checkPushBlockedBanner === "function") checkPushBlockedBanner();
 
   } catch (error) {
     console.error("Dashboard failed to load securely:", error);

@@ -481,6 +481,32 @@ window.executeTransferToSales = async function () {
 
         window.stopQCTimer('Synced', false);
         if (window.showToast) window.showToast("Batch Sync Successful!", "success");
+
+        // NEW: Queue Admin Alert
+        try {
+            const { data: adminUsers } = await window.supabase1.from('users').select('username').contains('app_roles', { ADMIN: [] });
+            if (adminUsers && adminUsers.length > 0) {
+                const notifPayload = adminUsers.map(user => ({
+                    cpn_no: user.username,
+                    channel: 'WHATSAPP, FIREBASE',
+                    message_type: 'ADMIN_ALERT',
+                    status: 'PENDING',
+                    trigger_type: 'AUTO',
+                    target_channels: ['WHATSAPP', 'FIREBASE'],
+                    raw_payload: {
+                        title: 'QC Sync Complete',
+                        body: `${adminName} transferred QC data to Sales.`,
+                        push_url: 'https://wowdrops.github.io/550_Admin_App.html',
+                        wa_template: 'admin_batch_alert', // REPALCE WITH YOUR ACTUAL META TEMPLATE NAME
+                        wa_variables: [adminName, 'QC data', 'Sales'] 
+                    },
+                    created_by: 'System'
+                }));
+                await window.supabase1.from('notification_logs').insert(notifPayload);
+            }
+        } catch (err) {
+            console.error("Failed to queue admin alert:", err);
+        }
         
         btn.innerText = "Process Selected";
         btn.disabled = false;

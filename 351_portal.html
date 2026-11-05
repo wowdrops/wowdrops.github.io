@@ -21,7 +21,8 @@
 
 <body class="font-sans antialiased text-slate-900">
 
-  <div id="app-container" class="max-w-md mx-auto min-h-screen bg-slate-50 flex flex-col justify-between relative shadow-2xl">
+  <div id="app-container"
+    class="max-w-md mx-auto min-h-screen bg-slate-50 flex flex-col justify-between relative shadow-2xl">
 
     <!-- LOGIN VIEW -->
     <div id="view-login" class="p-8 space-y-8 mt-12 md:my-auto fade-in">
@@ -328,11 +329,16 @@
       <!-- DASHBOARD SCROLL AREA -->
       <div class="flex-1 flex flex-col p-5 pb-10">
         <div id="payment-status-banner" class="mb-4 hidden"></div>
+        <!-- ADD THIS RIGHT BELOW payment-status-banner -->
+        <div id="push-blocked-banner" class="hidden bg-rose-50 border-l-4 border-rose-500 p-3 rounded-r-xl shadow-sm mb-4 cursor-pointer" onclick="showUnblockGuide()">
+          <div class="flex items-start">
+            <svg class="w-5 h-5 text-rose-500 mr-2 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+            <p class="text-[11px] font-bold text-rose-900 leading-snug mt-0.5">Alerts are blocked. Tap here to see how to unblock them to get live updates.</p>
+          </div>
+        </div>
         <!-- DARK BLUE SUMMARY CARD -->
-        <div
-          class="bg-gradient-to-r from-slate-900 to-indigo-950 p-4 rounded-xl shadow-md border border-slate-800 mb-3 flex-shrink-0 text-white relative">
-          <div id="dash-skel"
-            class="absolute inset-0 bg-slate-900 rounded-xl z-10 flex items-center justify-center hidden">
+        <div class="bg-gradient-to-r from-slate-900 to-indigo-950 p-4 rounded-xl shadow-md border border-slate-800 mb-3 flex-shrink-0 text-white relative">
+          <div id="dash-skel" class="absolute inset-0 bg-slate-900 rounded-xl z-10 flex items-center justify-center hidden">
             <div class="w-8 h-8 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
           </div>
 
@@ -587,9 +593,8 @@
             </div>
 
             <!-- Chevron arrow that will rotate -->
-            <svg id="icon-toggle-activity"
-              class="w-5 h-5 text-slate-400 transform transition-transform duration-300" fill="none"
-              stroke="currentColor" viewBox="0 0 24 24">
+            <svg id="icon-toggle-activity" class="w-5 h-5 text-slate-400 transform transition-transform duration-300"
+              fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
             </svg>
 
@@ -1115,6 +1120,22 @@
           class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg shadow transition-colors">I
           Understand</button>
       </div>
+    </div>
+  </div>
+  <!-- UNBLOCK INSTRUCTIONS MODAL -->
+  <div id="unblock-guide-modal" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 fade-in">
+    <div class="bg-white w-full max-w-sm rounded-[24px] shadow-2xl p-6 text-center space-y-4">
+      <div class="mx-auto w-12 h-12 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center mb-2">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+      </div>
+      <h3 class="font-extrabold text-xl text-slate-800">How to Unblock Alerts</h3>
+      <div class="text-left text-sm text-slate-600 font-medium space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <p>1. Tap the <strong>padlock icon 🔒</strong> or <strong>settings icon</strong> in your browser's address bar at the top.</p>
+        <p>2. Find <strong>Notifications</strong> or <strong>Site Settings</strong>.</p>
+        <p>3. Change the permission from <strong>Block</strong> to <strong>Allow</strong>.</p>
+        <p>4. Refresh this page.</p>
+      </div>
+      <button onclick="document.getElementById('unblock-guide-modal').classList.add('hidden')" class="w-full bg-slate-800 text-white font-bold p-3 rounded-xl hover:bg-slate-900 transition text-sm shadow-md">Got it</button>
     </div>
   </div>
 

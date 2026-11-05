@@ -36,16 +36,16 @@ serve(async (req) => {
     // 2. Fetch PENDING records based on the mode
     // Fetch dynamic batch limit and routing preference from setup table
     const { data: setupData } = await supabase.from('setup').select('key, value').in('key', ['CRON_BATCH_SIZE_SEND_ALERT', 'WA_ROUTING_PREFERENCE'])
-    
+
     let batchLimit = 50
     let routingPref = 'MAX_REACH'
 
     if (setupData) {
-        const limitRow = setupData.find(r => r.key === 'CRON_BATCH_SIZE_SEND_ALERT')
-        if (limitRow?.value) batchLimit = parseInt(limitRow.value, 10)
-        
-        const prefRow = setupData.find(r => r.key === 'WA_ROUTING_PREFERENCE')
-        if (prefRow?.value) routingPref = prefRow.value.trim().toUpperCase()
+      const limitRow = setupData.find(r => r.key === 'CRON_BATCH_SIZE_SEND_ALERT')
+      if (limitRow?.value) batchLimit = parseInt(limitRow.value, 10)
+
+      const prefRow = setupData.find(r => r.key === 'WA_ROUTING_PREFERENCE')
+      if (prefRow?.value) routingPref = prefRow.value.trim().toUpperCase()
     }
 
     let query = supabase
@@ -62,7 +62,7 @@ serve(async (req) => {
     }
 
     const { data: pendingLogs, error: fetchError } = await query
-    
+
     if (fetchError) throw new Error(`Database error fetching logs: ${fetchError.message}`)
     if (!pendingLogs || pendingLogs.length === 0) {
       return new Response(JSON.stringify({ success: true, message: 'No pending notifications to process.' }), {
@@ -81,67 +81,89 @@ serve(async (req) => {
 
     // 4. Iterate and Dispatch
     for (const log of pendingLogs) {
-      const { id, cpn_no, target_channels = [], raw_payload = {} } = log
+      const { id, cpn_no, target_channels = [], raw_payload = {}, message_type } = log
       
       let finalStatus = 'SUCCESS'
       let finalCost = 0.00
       let errors: string[] = []
-      let push_delivered = false // Tracker for COST_SAVER logic
+      let push_delivered = false 
 
-      // Fetch latest customer contact details
-      const { data: customer } = await supabase.from('ac_customers').select('con1, mail_id').eq('cpn_no', cpn_no).single()
-      const { data: pushSub } = await supabase.from('push_subscriptions').select('subscription_json').eq('cpn_no', cpn_no).maybeSingle()
+      let phoneNum = null;
+      let emailAddress = null;
+      let pushSubs = [];
+      let isCustomer = true;
 
-      const phoneNum = customer?.con1 ? String(customer.con1).replace(/\D/g, '') : null
-      const emailAddress = customer?.mail_id
+      // NEW: Branch logic for Admin vs Customer
+      if (message_type === 'ADMIN_ALERT') {
+          isCustomer = false;
+          // Look up users table for admin details
+          const { data: adminUser } = await supabase.from('users').select('phone, mail_id').eq('username', cpn_no).single()
+          const { data: adminSubs } = await supabase.from('push_subscriptions_admin').select('device_id, subscription_json').eq('username', cpn_no)
+          
+          phoneNum = adminUser?.phone ? String(adminUser.phone).replace(/\D/g, '') : null;
+          emailAddress = adminUser?.mail_id;
+          pushSubs = adminSubs || [];
+      } else {
+          // Look up ac_customers table for customer details
+          const { data: customer } = await supabase.from('ac_customers').select('con1, mail_id').eq('cpn_no', cpn_no).single()
+          const { data: custSubs } = await supabase.from('push_subscriptions').select('device_id, subscription_json').eq('cpn_no', cpn_no)
+
+          phoneNum = customer?.con1 ? String(customer.con1).replace(/\D/g, '') : null;
+          emailAddress = customer?.mail_id;
+          pushSubs = custSubs || [];
+      }
 
       // --- CHANNEL ROUTING EXECUTION ---
-
-      // A. FIREBASE PUSH API (Moved to top so WhatsApp knows if it succeeded)
       if (target_channels.includes('FIREBASE')) {
         try {
-          // Smart extraction: Look for the 'token' key inside the JSON object
-          const fcmToken = pushSub?.subscription_json?.token 
+          if (pushSubs && pushSubs.length > 0) {
+            let pushAttempted = false;
+            
+            for (const sub of pushSubs) {
+              const fcmToken = sub?.subscription_json?.token;
+              const deviceId = sub?.device_id;
 
-          if (fcmToken) {
-            // Build payload using Admin SDK structure (ported from your GAS webpush config)
-            const fcmMessage = {
-              token: fcmToken,
-              notification: {
-                title: raw_payload.title,
-                body: raw_payload.body
-              },
-              webpush: {
-                fcmOptions: {
-                  link: raw_payload.push_url || "https://wowdrops.github.io/351_portal.html"
+              if (fcmToken) {
+                pushAttempted = true;
+                const fcmMessage = {
+                  token: fcmToken,
+                  notification: { title: raw_payload.title, body: raw_payload.body },
+                  webpush: { fcmOptions: { link: raw_payload.push_url || "https://wowdrops.github.io/351_portal.html" } }
+                }
+
+                try {
+                  await getMessaging().send(fcmMessage)
+                  finalCost += 0.00 
+                  push_delivered = true 
+                } catch (fcmError: any) {
+                  const errorCode = fcmError.code || fcmError.errorInfo?.code
+                  
+                  if (errorCode === 'messaging/registration-token-not-registered' || 
+                      errorCode === 'messaging/invalid-registration-token' || 
+                      errorCode === 'messaging/invalid-argument') {
+                    
+                    errors.push(`Push Error: Dead token detected. Auto-cleaned device ${deviceId}.`)
+                    
+                    // Cleanup from the correct table
+                    if (deviceId) {
+                      if (isCustomer) {
+                        await supabase.from('push_subscriptions').delete().eq('cpn_no', cpn_no).eq('device_id', deviceId)
+                      } else {
+                        await supabase.from('push_subscriptions_admin').delete().eq('username', cpn_no).eq('device_id', deviceId)
+                      }
+                    }
+                  } else {
+                    errors.push(`Push Error (Device ${deviceId}): ${fcmError.message}`)
+                  }
                 }
               }
             }
 
-            try {
-              // Admin SDK automatically handles the OAuth2 token generation!
-              await getMessaging().send(fcmMessage)
-              finalCost += 0.00 // Pushes are free
-              push_delivered = true // Mark as successfully delivered!
-            } catch (fcmError: any) {
-              const errorCode = fcmError.code || fcmError.errorInfo?.code
-              
-              // --- THE AUTO-CLEANUP LOGIC PORTED FROM GAS ---
-              if (errorCode === 'messaging/registration-token-not-registered' || 
-                  errorCode === 'messaging/invalid-registration-token' || 
-                  errorCode === 'messaging/invalid-argument') {
-                
-                errors.push(`Push Error: Dead token detected. Auto-cleaned from database.`)
-                
-                // Instantly delete the dead token from Supabase so it doesn't fail again tomorrow
-                await supabase.from('push_subscriptions').delete().eq('cpn_no', cpn_no)
-              } else {
-                errors.push(`Push Error: ${fcmError.message}`)
-              }
+            if (!pushAttempted) {
+              errors.push(`Push Skipped: Customer subscriptions exist but have no valid tokens.`)
             }
-
           } else {
-            errors.push(`Push Skipped: Customer has no registered device token.`)
+            errors.push(`Push Skipped: Customer has no registered device tokens.`)
           }
         } catch (err: any) {
           errors.push(`Push System Failure: ${err.message}`)
@@ -150,42 +172,42 @@ serve(async (req) => {
 
       // B. WHATSAPP META API
       if (target_channels.includes('WHATSAPP') && phoneNum && raw_payload.wa_template) {
-        
+
         // INTELLIGENT ROUTING CHECK
         if (routingPref === 'COST_SAVER' && push_delivered) {
-            // Silently skip WhatsApp to save money. We don't log an error because this is a success state.
+          // Silently skip WhatsApp to save money. We don't log an error because this is a success state.
         } else {
-            const waToken = Deno.env.get('META_WA_TOKEN')
-            const waPhoneId = Deno.env.get('META_PHONE_ID')
-            
-            // FIXED LOGIC: Only attach components if variables exist, avoiding Meta strict crashes
-            const templatePayload: any = {
-              messaging_product: "whatsapp",
-              to: `91${phoneNum.slice(-10)}`,
-              type: "template",
-              template: { name: raw_payload.wa_template, language: { code: "en" } }
-            }
+          const waToken = Deno.env.get('META_WA_TOKEN')
+          const waPhoneId = Deno.env.get('META_PHONE_ID')
 
-            if (raw_payload.wa_variables && raw_payload.wa_variables.length > 0) {
-                templatePayload.template.components = [{
-                    type: "body",
-                    parameters: raw_payload.wa_variables.map((val: any) => ({ type: "text", text: String(val) }))
-                }]
-            }
+          // FIXED LOGIC: Only attach components if variables exist, avoiding Meta strict crashes
+          const templatePayload: any = {
+            messaging_product: "whatsapp",
+            to: `91${phoneNum.slice(-10)}`,
+            type: "template",
+            template: { name: raw_payload.wa_template, language: { code: "en" } }
+          }
 
-            try {
-              const waRes = await fetch(`https://graph.facebook.com/v17.0/${waPhoneId}/messages`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${waToken}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(templatePayload)
-              })
-              
-              const waData = await waRes.json()
-              if (waData.error) errors.push(`WhatsApp Error: ${waData.error.message}`)
-              else finalCost += 0.88 
-            } catch (err: any) {
-              errors.push(`WhatsApp Network Failure: ${err.message}`)
-            }
+          if (raw_payload.wa_variables && raw_payload.wa_variables.length > 0) {
+            templatePayload.template.components = [{
+              type: "body",
+              parameters: raw_payload.wa_variables.map((val: any) => ({ type: "text", text: String(val) }))
+            }]
+          }
+
+          try {
+            const waRes = await fetch(`https://graph.facebook.com/v17.0/${waPhoneId}/messages`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${waToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify(templatePayload)
+            })
+
+            const waData = await waRes.json()
+            if (waData.error) errors.push(`WhatsApp Error: ${waData.error.message}`)
+            else finalCost += 0.88
+          } catch (err: any) {
+            errors.push(`WhatsApp Network Failure: ${err.message}`)
+          }
         }
       } else if (target_channels.includes('WHATSAPP') && !phoneNum) {
         errors.push(`WhatsApp Skipped: No valid phone number.`)

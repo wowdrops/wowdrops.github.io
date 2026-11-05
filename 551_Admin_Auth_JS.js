@@ -501,8 +501,24 @@ window.backToLoginState = function () {
     document.getElementById('login-err').classList.add('hidden');
 };
 
-window.logoutAdmin = function (customMsg) {
+window.logoutAdmin = async function (customMsg) {
     if (window._sessionHeartbeatTimer) clearInterval(window._sessionHeartbeatTimer);
+
+    // NEW: Delete device token on logout
+    if (window.activeAdminSession && window.activeAdminSession.username) {
+        const deviceId = localStorage.getItem('wowdrops_admin_device_id');
+        if (deviceId) {
+            try {
+                await window.supabase1
+                    .from('push_subscriptions_admin')
+                    .delete()
+                    .eq('username', window.activeAdminSession.username)
+                    .eq('device_id', deviceId);
+            } catch(e) { console.error("Logout push cleanup failed", e); }
+        }
+    }
+
+
     localStorage.removeItem('wowdrops_admin_session_payload');
     window.activeAdminSession = null;
 
@@ -593,6 +609,11 @@ window.handleAdminLogin = async function () {
         document.getElementById('btn-login').innerText = "Sign In";
         localStorage.setItem('wowdrops_admin_session_payload', JSON.stringify(window.activeAdminSession));
         window.assertWorkspaceDeployment();
+
+        // NEW: Trigger notification check after login
+        if (typeof checkAdminNotificationStatus === 'function') {
+            //checkAdminNotificationStatus();
+        }
 
     } catch (err) {
         document.getElementById('btn-login').innerText = "Sign In";
@@ -775,7 +796,7 @@ window.initAdminAuth = function () {
     var storedSession = localStorage.getItem('wowdrops_admin_session_payload');
     if (storedSession) {
         window.activeAdminSession = JSON.parse(storedSession);
-        window.assertWorkspaceDeployment();
+        window.assertWorkspaceDeployment(); // Note: NO 'await' here.
     }
 
     var today = new Date();
@@ -802,4 +823,5 @@ window.initAdminAuth = function () {
     window.addEventListener('resize', window.handleSidebarResize);
 };
 
+// Standard synchronous call
 window.initAdminAuth();

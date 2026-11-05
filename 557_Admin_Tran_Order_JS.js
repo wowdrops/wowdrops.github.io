@@ -486,7 +486,7 @@ window.submitOrd2Order = async function () {
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
     const estAmt = ordD * ord2CachedProfile.rate;
-    const payload = null;
+    var payload = null;
 
     if (ord2CurrentEditId) {
       //update
@@ -612,6 +612,34 @@ window.executeBatchTransferToDel2 = async function () {
       btn.disabled = false;
       if (window.showToast) window.showToast(result.transferred_count + " records moved to deliveries & alerts queued.", "success");
 
+      // NEW: Queue Admin Alert
+      try {
+          // Fetch all ADMIN users
+          const { data: adminUsers } = await window.supabase1.from('users').select('username').contains('app_roles', { ADMIN: [] });
+          
+          if (adminUsers && adminUsers.length > 0) {
+              const notifPayload = adminUsers.map(user => ({
+                  cpn_no: user.username, // Store admin username here for edge function to read
+                  channel: 'WHATSAPP, FIREBASE',
+                  message_type: 'ADMIN_ALERT',
+                  status: 'PENDING',
+                  trigger_type: 'AUTO',
+                  target_channels: ['WHATSAPP', 'FIREBASE'],
+                  raw_payload: {
+                      title: 'Batch Transfer Complete',
+                      body: `${adminName} transferred ${result.transferred_count} orders to Deliveries.`,
+                      push_url: 'https://wowdrops.github.io/550_Admin_App.html',
+                      wa_template: 'admin_batch_alert', // REPALCE WITH YOUR ACTUAL META TEMPLATE NAME
+                      wa_variables: [adminName, result.transferred_count.toString(), 'Deliveries'] 
+                  },
+                  created_by: 'System'
+              }));
+              await window.supabase1.from('notification_logs').insert(notifPayload);
+          }
+      } catch (err) {
+          console.error("Failed to queue admin alert:", err);
+      }
+      
       window.loadTranOrdersData();
 
     } catch (err) {
