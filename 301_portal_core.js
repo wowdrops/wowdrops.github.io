@@ -18,7 +18,7 @@ window.limitReasonD = "";
 window.limitReasonE = "";
 
 (function () {
-  var APP_VERSION = "4.3"; // Bumped version for new PG rollout
+  var APP_VERSION = "4.4"; // Bumped version for new PG rollout
   var savedVersion = localStorage.getItem('wowdrops_app_version');
   if (savedVersion !== APP_VERSION) {
     localStorage.setItem('wowdrops_app_version', APP_VERSION);
@@ -28,7 +28,28 @@ window.limitReasonE = "";
   }
 })();
 
-window.onload = function () {
+window.loadSystemSetupConfig = async function() {
+    try {
+        const { data, error } = await window.supabase1.from('setup').select('key, value');
+        if (error || !data) return;
+
+        const config = {};
+        data.forEach(row => config[row.key] = row.value);
+
+        if (config['admin_gas_webhook_url']) window.GAS_WEBHOOK_URL = config['admin_gas_webhook_url'];
+
+        // Initialize Firebase dynamically
+        if (config['firebase_config_json'] && config['firebase_vapid_key']) {
+            if (typeof window.initFirebaseSystem === 'function') {
+                window.initFirebaseSystem(config['firebase_config_json'], config['firebase_vapid_key']);
+            }
+        }
+    } catch (e) {
+        console.error("Failed to load setup config:", e);
+    }
+};
+
+window.onload = async function () {
   if (!ALLOW_MANUAL_CAN_ENTRY) {
     document.getElementById('input-ord-d').disabled = true;
     document.getElementById('btn-can-minus').classList.add('hidden');
@@ -41,7 +62,8 @@ window.onload = function () {
     document.getElementById('btn-can-plus').classList.remove('hidden');
     document.getElementById('can-input-wrapper').classList.remove('opacity-70', 'cursor-not-allowed');
   }
-
+  // --- NEW: FETCH CONFIGS BEFORE BOOTING ---
+  await window.loadSystemSetupConfig();
   var savedSession = localStorage.getItem('wowdrops_customer_session');
   if (savedSession) {
     activeUserSession = JSON.parse(savedSession);
@@ -50,11 +72,10 @@ window.onload = function () {
     switchView('view-dashboard');
     refreshCustomerSessionData(activeUserSession.cpn);
   }
-
   if (typeof checkForPaymentRedirect === "function") checkForPaymentRedirect();
 
   checkDeviceCapabilities();
-};//END ONLOAD 
+}; //END ONLOAD
 
 function isServerBusy() {
   if (activeApiRequests > 0) { showBusyMessage(); return true; }
@@ -122,7 +143,7 @@ async function processApiQueue() {
 
   while (attempts < maxAttempts && !success) {
     try {
-      const response = await fetch(GAS_WEBHOOK_URL, {
+      const response = await fetch(window.GAS_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(currentRequest.payload),

@@ -36,6 +36,40 @@ window.hasWriteAccess = function (tabName) {
     return !readOnlyList.includes(tabName);
 };
 
+window.loadSystemSetupConfig = async function() {
+    try {
+        const { data, error } = await window.supabase1.from('setup').select('key, value');
+        if (error || !data) return;
+
+        const config = {};
+        data.forEach(row => config[row.key] = row.value);
+
+        // Core Admin Vars
+        if (config['admin_dormant_min_days']) window.dormantMinDays = Number(config['admin_dormant_min_days']);
+        if (config['admin_dormant_max_days']) window.dormantMaxDays = Number(config['admin_dormant_max_days']);
+        if (config['admin_sales_display_count']) window.salesDisplayCount = Number(config['admin_sales_display_count']);
+        
+        // Expiry & API
+        window.adminOtpExpiryMins = Number(config['admin_otp_expiry_minutes']) || 10;
+        window.adminEodPinExpiryMins = Number(config['admin_eod_pin_expiry_minutes']) || 60;
+        if (config['admin_imgbb_api_key']) window.IMGBB_API_KEY = config['admin_imgbb_api_key'];
+        if (config['admin_gas_webhook_url']) window.GAS_WEBHOOK_URL = config['admin_gas_webhook_url'];
+        
+        // Notification Alignment
+        window.autoNotifyChannels = config['AUTO_NOTIFY_CHANNELS'] || 'WHATSAPP,FIREBASE';
+        window.waTemplateAdminBatch = config['wa_template_admin_batch'] || 'admin_batch_alert';
+
+        // Firebase Dynamic Init
+        if (config['firebase_config_json'] && config['firebase_vapid_key']) {
+            if (typeof window.initFirebaseSystem === 'function') {
+                window.initFirebaseSystem(config['firebase_config_json'], config['firebase_vapid_key']);
+            }
+        }
+    } catch (e) {
+        console.error("Failed to load setup config:", e);
+    }
+};
+
 window.hashPassword = async function (password) {
     if (!password) return "";
     const msgBuffer = new TextEncoder().encode(String(password).trim());
@@ -92,6 +126,11 @@ window.assertWorkspaceDeployment = async function () {
 
     window.startSessionHeartbeat();
     await window.applyRolePermissions();
+    await window.loadSystemSetupConfig(); // <-- FETCHES VARIABLES BEFORE UI LOADS
+
+    if (typeof checkAdminNotificationStatus === 'function') {
+        checkAdminNotificationStatus();
+    }
 
     var allowed = window.activeAdminSession ? (window.activeAdminSession.allowedTabs || []) : [];
     var firstTab = (allowed.includes('ALL') || allowed.includes('dashboard')) ? 'dashboard' : allowed[0];
@@ -612,7 +651,7 @@ window.handleAdminLogin = async function () {
 
         // NEW: Trigger notification check after login
         if (typeof checkAdminNotificationStatus === 'function') {
-            //checkAdminNotificationStatus();
+            checkAdminNotificationStatus();
         }
 
     } catch (err) {
@@ -628,8 +667,11 @@ window.requestOTP = async function () {
 
     document.getElementById('btn-otp').innerText = "Sending Code...";
     try {
+        //const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        //const expiry = new Date(new Date().getTime() + (10 * 60 * 1000)).toISOString();
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiry = new Date(new Date().getTime() + (10 * 60 * 1000)).toISOString();
+        const expiryMins = window.adminOtpExpiryMins || 10;
+        const expiry = new Date(new Date().getTime() + (expiryMins * 60 * 1000)).toISOString();
 
         const { error } = await window.supabase1
             .from('users')

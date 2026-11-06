@@ -6,27 +6,27 @@ window.activeQCTimerInterval = null;
 window.qcStartTime = 0;
 window.activeUploadContext = null;
 
-window.startQCTimer = function(actionLabel) {
+window.startQCTimer = function (actionLabel) {
     var timerBadge = document.getElementById('qc-live-timer');
     if (!timerBadge) return;
     timerBadge.outerHTML = '<span id="qc-live-timer" class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-400 font-black px-3 py-1.5 rounded-lg text-sm border-2 border-indigo-200 dark:border-indigo-700 shadow-inner flex items-center gap-1.5 min-w-max transition-colors"><svg class="w-4 h-4 animate-spin text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>' + actionLabel + ': <span id="qc-timer-sec">0.00</span>s</span>';
     document.getElementById('qc-live-timer').classList.remove('hidden');
     window.qcStartTime = performance.now();
-    
-    if(window.activeQCTimerInterval) clearInterval(window.activeQCTimerInterval);
-    
-    window.activeQCTimerInterval = setInterval(function() {
+
+    if (window.activeQCTimerInterval) clearInterval(window.activeQCTimerInterval);
+
+    window.activeQCTimerInterval = setInterval(function () {
         var secEl = document.getElementById('qc-timer-sec');
-        if(secEl) secEl.innerText = ((performance.now() - window.qcStartTime) / 1000).toFixed(2);
+        if (secEl) secEl.innerText = ((performance.now() - window.qcStartTime) / 1000).toFixed(2);
     }, 50);
 };
 
-window.stopQCTimer = function(successLabel, isError) {
-    if(window.activeQCTimerInterval) clearInterval(window.activeQCTimerInterval);
+window.stopQCTimer = function (successLabel, isError) {
+    if (window.activeQCTimerInterval) clearInterval(window.activeQCTimerInterval);
     var finalTime = ((performance.now() - window.qcStartTime) / 1000).toFixed(2);
     var badge = document.getElementById('qc-live-timer');
-    if(badge) {
-        badge.outerHTML = isError 
+    if (badge) {
+        badge.outerHTML = isError
             ? '<span id="qc-live-timer" class="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 font-bold px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-800 text-xs uppercase tracking-widest whitespace-nowrap shadow-sm min-w-max transition-colors">Failed</span>'
             : '<span id="qc-live-timer" class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 font-bold px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 text-xs uppercase tracking-widest whitespace-nowrap shadow-sm min-w-max transition-colors">' + successLabel + ' in ' + finalTime + 's</span>';
     }
@@ -83,7 +83,7 @@ window.loadDeliveryQCData = async function (filterArg) {
     try {
         const { data: ordData, error: ordErr } = await window.supabase1.from('orders').select('cpn_no, ord_d, ord_e');
         if (ordErr) throw ordErr;
-        
+
         window.existingOrd2Data = {};
         if (ordData) {
             ordData.forEach(o => {
@@ -146,7 +146,7 @@ window.loadDeliveryQCData = async function (filterArg) {
                 replaceQty: d.replace_qty || 0, replaceReason: d.replace_reason || "",
                 repVj: d.replace_act_vj || 0, repNvj: d.replace_act_nvj || 0,
                 aiD: d.act_d_ai || 0, aiE: d.act_e_ai || 0,
-                doorPhoto: d.door_qc_photo || d.door_delivery_link || "", 
+                doorPhoto: d.door_qc_photo || d.door_delivery_link || "",
                 isVerified: d.door_qc === 'true' || d.door_qc === 'TRUE' || d.door_qc === true,
                 delComment: cmt, rollover: rolloverState, rate: d.rate || d.default_rate || 0
             });
@@ -165,7 +165,7 @@ window.loadDeliveryQCData = async function (filterArg) {
         window.populateQCFilters(blocksData);
         window.renderQCDashboard(blocksData);
         window.updateExceptionBadge();
-        
+
         for (var blockId in blocksData) {
             window.updateBlockMath(blockId, true);
             if (blocksData[blockId].isBlockVerified) window.selectedBlocks.push(blockId);
@@ -173,55 +173,58 @@ window.loadDeliveryQCData = async function (filterArg) {
 
         window.sortBlocks();
         window.checkTransferReady();
-        
+
         if (filterArg && ['ALL', 'VERIFIED', 'PENDING'].includes(filterArg.toUpperCase())) {
             window.setStatusFilter(filterArg.toUpperCase());
         } else {
-            window.setStatusFilter('ALL'); 
+            window.setStatusFilter('ALL');
         }
 
         window.stopQCTimer('Loaded', false);
 
     } catch (err) {
         window.stopQCTimer('Failed', true);
-        if(window.showToast) window.showToast("Load Error: " + err.message, "error");
+        if (window.showToast) window.showToast("Load Error: " + err.message, "error");
         document.getElementById('qc-blocks-container').innerHTML = '<div class="text-center p-8 font-black text-red-500 dark:text-red-400">Error: ' + err.message + '</div>';
     }
 };
 
-window.requestEodPin = async function() {
+window.requestEodPin = async function () {
     var btn = document.getElementById('btn-generate-otp');
     var originalText = btn.innerHTML;
     btn.innerHTML = '⏳ Generating...'; btn.disabled = true;
-    
+
     if (!window.activeAdminSession || !window.activeAdminSession.mailid) {
         btn.innerHTML = originalText; btn.disabled = false;
-        if(window.showToast) return window.showToast("Session error: No active admin email.", "error");
+        if (window.showToast) return window.showToast("Session error: No active admin email.", "error");
         return;
     }
-    
+
     window.startQCTimer('Generating PIN');
 
     try {
+        //var newPin = Math.floor(1000 + Math.random() * 9000).toString();
+        //var expiryTime = new Date(new Date().getTime() + (60 * 60 * 1000)).toISOString(); 
         var newPin = Math.floor(1000 + Math.random() * 9000).toString();
-        var expiryTime = new Date(new Date().getTime() + (60 * 60 * 1000)).toISOString(); 
+        var expiryMins = window.adminEodPinExpiryMins || 60;
+        var expiryTime = new Date(new Date().getTime() + (expiryMins * 60 * 1000)).toISOString();
 
         const { error } = await window.supabase1.from('users')
             .update({ pin: newPin, pin_expiry: expiryTime })
             .eq('mail_id', window.activeAdminSession.mailid);
 
         if (error) throw error;
-        
+
         window.stopQCTimer('Generated', false);
-        if(window.showToast) {
+        if (window.showToast) {
             window.showToast("PIN Generated successfully.", "success");
             alert("🔐 EOD Handshake PIN generated:\n\n" + newPin + "\n\nProvide this PIN to the van crew. It will expire in 60 minutes.");
         } else {
             alert("🔐 EOD Handshake PIN generated:\n\n" + newPin + "\n\nProvide this PIN to the van crew. It will expire in 60 minutes.");
         }
-    } catch(err) {
+    } catch (err) {
         window.stopQCTimer('Failed', true);
-        if(window.showToast) window.showToast("Server Error: " + err.message, "error");
+        if (window.showToast) window.showToast("Server Error: " + err.message, "error");
     } finally {
         btn.innerHTML = originalText; btn.disabled = false;
     }
@@ -259,7 +262,7 @@ window.toggleRolloverLive = async function (blockId, uniqueNo, checkbox) {
         checkbox.checked = !isChecked;
         statusEl.innerText = 'FAILED';
         statusEl.className = 'block text-[8px] text-rose-600 dark:text-rose-400 mt-1.5 font-black uppercase tracking-widest h-3 save-status-' + uniqueNo;
-        if(window.showToast) window.showToast("Failed to save Rollover state.", "error");
+        if (window.showToast) window.showToast("Failed to save Rollover state.", "error");
     } finally {
         checkbox.disabled = false;
     }
@@ -288,13 +291,13 @@ window.syncQCStateBatch = async function (blockId, blockData, doorsArray) {
         });
 
         await Promise.all(promises);
-    } catch(e) { console.error("Sync Error", e); }
+    } catch (e) { console.error("Sync Error", e); }
 };
 
 window.verifyBlockQC = function (blockId) {
     var blockGroup = document.querySelector('.qc-block-group[data-block-id="' + blockId + '"]');
     if (blockGroup.querySelectorAll('.qc-door-chk:not(:checked)').length > 0) {
-        if(window.showToast) return window.showToast("Verify all doors in this block first.", "warning");
+        if (window.showToast) return window.showToast("Verify all doors in this block first.", "warning");
         return;
     }
 
@@ -309,7 +312,7 @@ window.verifyBlockQC = function (blockId) {
     var finalE = (parseInt(blockGroup.querySelector('.qc-sys-empties').innerText) || 0) + xE - sE;
 
     if (finalF !== driverB2vF || finalE !== driverB2vE) {
-        if(window.showToast) return window.showToast("Math Error! Use Variance boxes to balance discrepancies.", "error");
+        if (window.showToast) return window.showToast("Math Error! Use Variance boxes to balance discrepancies.", "error");
         return;
     }
 
@@ -341,7 +344,7 @@ window.executeTransferToSales = async function () {
         if (window.showToast) return window.showToast("Select at least one verified block.", "warning");
         return;
     }
-    
+
     if (!confirm("Execute batch sync for " + window.selectedBlocks.length + " selected block(s)?")) return;
 
     btn.innerText = "Syncing..."; btn.disabled = true;
@@ -353,11 +356,11 @@ window.executeTransferToSales = async function () {
         var rolloverOrdersBatch = [];
         var timeNow = new Date().toISOString();
         var todayDateStr = timeNow.split('T')[0];
-        
+
         // 1. GATHER DELIVERIES & IDENTIFY ROLLOVER SHORTAGES
         window.selectedBlocks.forEach(blockId => {
             var bData = window.cachedQCBlocksData[blockId];
-            
+
             bData.doors.forEach(d => {
                 deliveryIdsToProcess.push(d.dbId);
 
@@ -377,11 +380,11 @@ window.executeTransferToSales = async function () {
                         if (d.delComment && d.delComment.includes("[DEFERRED")) {
                             pushReason = d.delComment.replace("[DEFERRED", "[AUTO-DEFERRED");
                         }
-                        
+
                         rolloverOrdersBatch.push({
                             unique_no: d.uniqueNo + ((actD > 0 || actE > 0) ? "-P1" : "-R1"),
                             cpn_no: d.cpn, apartment: bData.apartment, block: bData.blockName, door: d.doorNo,
-                            order_date: todayDateStr, ord_d: diffD, ord_e: diffE, rate: d.rate, amount: diffD * d.rate,
+                            order_date: d.order_date, ord_d: diffD, ord_e: diffE, rate: d.rate, amount: diffD * d.rate,
                             order_comment: pushReason, status: "PENDING", pending_qty: diffD,
                             replace_qty: diffRep, replace_reason: d.replaceReason,
                             created_at: timeNow, created_by: adminName
@@ -393,7 +396,7 @@ window.executeTransferToSales = async function () {
 
         // 2. GODOWN HANDSHAKE VALIDATION
         var startOfToday = new Date();
-        startOfToday.setHours(0,0,0,0);
+        startOfToday.setHours(0, 0, 0, 0);
         var startOfTodayISO = startOfToday.toISOString();
 
         const { data: eodLogs } = await window.supabase1.from('eod_log')
@@ -414,7 +417,7 @@ window.executeTransferToSales = async function () {
         var liveCollisions = rolloverOrdersBatch.some(r => currentOrders.includes(r.cpn_no.toUpperCase()));
 
         if (liveCollisions) {
-            window.loadDeliveryQCData(); 
+            window.loadDeliveryQCData();
             throw new Error("LIVE COLLISION DETECTED! A customer placed a new order while you were reviewing. Please disable Rollover for highlighted exceptions.");
         }
 
@@ -448,7 +451,7 @@ window.executeTransferToSales = async function () {
                 allTripSales.forEach(s => {
                     totalActD += (s.act_d || 0);
                     totalActE += (s.act_e || 0);
-                    
+
                     let bKey = s.apartment + "_" + s.block;
                     if (uniqueBlockUnloads[bKey] === undefined) {
                         uniqueBlockUnloads[bKey] = s.van_to_block_full_can_count || 0;
@@ -486,28 +489,34 @@ window.executeTransferToSales = async function () {
         try {
             const { data: adminUsers } = await window.supabase1.from('users').select('username').contains('app_roles', { ADMIN: [] });
             if (adminUsers && adminUsers.length > 0) {
+                // Add this right before building the payload:
+                const activeChannelsStr = window.autoNotifyChannels || 'WHATSAPP,FIREBASE';
+                const activeChannelsArr = activeChannelsStr.split(',').map(s => s.trim());
+                const waTemplate = window.waTemplateAdminBatch || 'admin_batch_alert';
+
+                // Update your payload mapping:
                 const notifPayload = adminUsers.map(user => ({
                     cpn_no: user.username,
-                    channel: 'WHATSAPP, FIREBASE',
+                    channel: activeChannelsStr, // <-- Now dynamic
                     message_type: 'ADMIN_ALERT',
                     status: 'PENDING',
                     trigger_type: 'AUTO',
-                    target_channels: ['WHATSAPP', 'FIREBASE'],
+                    target_channels: activeChannelsArr, // <-- Now dynamic
                     raw_payload: {
-                        title: 'QC Sync Complete',
-                        body: `${adminName} transferred QC data to Sales.`,
-                        push_url: 'https://wowdrops.github.io/550_Admin_App.html',
-                        wa_template: 'admin_batch_alert', // REPALCE WITH YOUR ACTUAL META TEMPLATE NAME
-                        wa_variables: [adminName, 'QC data', 'Sales'] 
+                        title: 'Batch Transfer Complete',
+                        body: `${adminName} transferred ${deliveryIdsToProcess.length} deliveries to sales.`,
+                        push_url: 'https://wowdrops.github.io/550_Admin_App.html#dashboard',
+                        wa_template: waTemplate, // <-- Now dynamic
+                        wa_variables: [adminName, deliveryIdsToProcess.length.toString(), 'DELIVERYQC']
                     },
-                    created_by: 'System'
+                    created_by: 'executeBatchTransferToDel2'
                 }));
                 await window.supabase1.from('notification_logs').insert(notifPayload);
             }
         } catch (err) {
-            console.error("Failed to queue admin alert:", err);
+            console.error("Failed to queue admin alert - DeliveryQC:", err);
         }
-        
+
         btn.innerText = "Process Selected";
         btn.disabled = false;
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -516,20 +525,20 @@ window.executeTransferToSales = async function () {
 
     } catch (err) {
         window.stopQCTimer('Blocked', true);
-        
+
         btn.innerText = "Process Selected";
         btn.disabled = false;
-        
+
         if (err.message.includes("LIVE COLLISION")) window.openExceptionReview();
         if (window.showToast) window.showToast(err.message, "error");
         else alert(err.message);
-        
+
         window.checkTransferReady();
     }
 };
 
 // --- IMGBB UPLOAD FOR ADMIN OVERRIDE ---
-window.compressAdminImage = function(file) {
+window.compressAdminImage = function (file) {
     return new Promise((resolve, reject) => {
         var reader = new FileReader();
         reader.onload = e => {
@@ -539,14 +548,14 @@ window.compressAdminImage = function(file) {
                 canvas.width = 800; canvas.height = img.height * (800 / img.width);
                 var ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                
+
                 var now = new Date();
                 var timeString = now.toLocaleDateString('en-IN') + " | " + now.toLocaleTimeString('en-IN');
                 ctx.fillStyle = "rgba(185, 28, 28, 0.85)"; ctx.fillRect(0, canvas.height - 75, canvas.width, 75);
                 ctx.fillStyle = "#ffffff"; ctx.font = "bold 22px sans-serif";
                 ctx.fillText("ADMIN OVERRIDE UPLOAD", 20, canvas.height - 45);
                 ctx.font = "bold 18px sans-serif"; ctx.fillText("Date: " + timeString, 20, canvas.height - 18);
-                
+
                 resolve(canvas.toDataURL('image/jpeg', 0.7));
             };
             img.onerror = () => reject("Image load error");
@@ -567,14 +576,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
             try {
                 var b64String = await window.compressAdminImage(file);
-                
+
                 document.getElementById('admin-qc-upload-text').innerText = "Uploading to ImgBB...";
                 let formData = new FormData();
-                formData.append("image", b64String.split(',')[1]); 
-                
+                formData.append("image", b64String.split(',')[1]);
+
                 let res = await fetch("https://api.imgbb.com/1/upload?key=" + window.IMGBB_API_KEY, { method: "POST", body: formData });
                 let json = await res.json();
-                
+
                 if (!json.success) throw new Error("ImgBB Upload Failed.");
                 var finalUrl = json.data.url;
 
@@ -586,22 +595,22 @@ document.addEventListener("DOMContentLoaded", function () {
                 var query = window.supabase1.from('deliveries').update(updatePayload);
                 if (payload.type === 'door') query = query.eq('unique_no', payload.doorUniqueNo);
                 else query = query.eq('apartment', payload.apt).eq('block', payload.blk);
-                
+
                 const { error: dbErr } = await query;
                 if (dbErr) throw dbErr;
 
                 var imgEl = document.getElementById(payload.imgId);
                 imgEl.src = finalUrl;
                 imgEl.setAttribute('onclick', 'window.openLightbox("' + finalUrl + '")');
-                
+
                 if (payload.type === 'door') imgEl.closest('.qc-door-row').setAttribute('data-photo-url', finalUrl);
                 else if (payload.type === 'v2b') window.cachedQCBlocksData[payload.blockId].v2bPhoto = finalUrl;
                 else window.cachedQCBlocksData[payload.blockId].b2vPhoto = finalUrl;
 
-                if(window.showToast) window.showToast("Image override successful.", "success");
+                if (window.showToast) window.showToast("Image override successful.", "success");
 
-            } catch(err) {
-                if(window.showToast) window.showToast("Upload Error: " + err.message, "error");
+            } catch (err) {
+                if (window.showToast) window.showToast("Upload Error: " + err.message, "error");
             } finally {
                 window.hideAdminUploadLoader();
                 e.target.value = '';
@@ -739,7 +748,7 @@ window.renderQCDashboard = function (blocksData) {
             var dFzClass = door.isVerified ? 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-600' : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-white border-indigo-200 dark:border-indigo-800';
             var dFzAttr = door.isVerified ? 'disabled' : '';
             var doorPhotoRaw = door.doorPhoto || "";
-            var uniqImgId = "img-" + blockId + "-" + door.uniqueNo; 
+            var uniqImgId = "img-" + blockId + "-" + door.uniqueNo;
 
             var cmtUI = '';
             if (door.delComment) {
@@ -764,19 +773,19 @@ window.renderQCDashboard = function (blocksData) {
                 '</div>' +
                 '<div class="flex gap-4 mt-1"><span class="text-[8px] font-black text-indigo-400 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 rounded uppercase tracking-widest border border-indigo-100 dark:border-indigo-800">🤖 AI F: ' + door.aiD + '</span><span class="text-[8px] font-black text-amber-400 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 px-1.5 rounded uppercase tracking-widest border border-amber-100 dark:border-amber-800">🤖 AI E: ' + door.aiE + '</span></div>';
 
-                var repUI = '';
-                if (door.replaceQty > 0) {
-                    repUI = '<div class="mt-2 bg-amber-50 dark:bg-amber-900/20 p-2 rounded-lg border border-amber-200 dark:border-amber-800 shadow-inner w-full max-w-[240px]">' +
-                            '<div class="text-[9px] font-black text-amber-800 dark:text-amber-400 uppercase text-center mb-1">Rep Ord: ' + door.replaceQty + ' (' + door.replaceReason + ')</div>' +
-                            '<div class="flex gap-2 w-full justify-center">' +
-                            '<div class="relative flex items-center gap-1"><span class="text-[9px] font-black text-amber-600 dark:text-amber-500 uppercase w-6">VJ</span><input type="number" oninput="window.updateBlockMath(\'' + blockId + '\')" class="w-12 p-1 border border-amber-300 dark:border-amber-700 rounded font-black text-center outline-none color-scheme-dark qc-inp-actrep-vj ' + dFzClass + '" value="' + door.repVj + '" ' + dFzAttr + '></div>' +
-                            '<div class="relative flex items-center gap-1 ml-2"><span class="text-[9px] font-black text-amber-600 dark:text-amber-500 uppercase w-6">NVJ</span><input type="number" oninput="window.updateBlockMath(\'' + blockId + '\')" class="w-12 p-1 border border-amber-300 dark:border-amber-700 rounded font-black text-center outline-none color-scheme-dark qc-inp-actrep-nvj ' + dFzClass + '" value="' + door.repNvj + '" ' + dFzAttr + '></div>' +
-                            '</div></div>';
-                }
-                
-        html += repUI + '</div>';
+            var repUI = '';
+            if (door.replaceQty > 0) {
+                repUI = '<div class="mt-2 bg-amber-50 dark:bg-amber-900/20 p-2 rounded-lg border border-amber-200 dark:border-amber-800 shadow-inner w-full max-w-[240px]">' +
+                    '<div class="text-[9px] font-black text-amber-800 dark:text-amber-400 uppercase text-center mb-1">Rep Ord: ' + door.replaceQty + ' (' + door.replaceReason + ')</div>' +
+                    '<div class="flex gap-2 w-full justify-center">' +
+                    '<div class="relative flex items-center gap-1"><span class="text-[9px] font-black text-amber-600 dark:text-amber-500 uppercase w-6">VJ</span><input type="number" oninput="window.updateBlockMath(\'' + blockId + '\')" class="w-12 p-1 border border-amber-300 dark:border-amber-700 rounded font-black text-center outline-none color-scheme-dark qc-inp-actrep-vj ' + dFzClass + '" value="' + door.repVj + '" ' + dFzAttr + '></div>' +
+                    '<div class="relative flex items-center gap-1 ml-2"><span class="text-[9px] font-black text-amber-600 dark:text-amber-500 uppercase w-6">NVJ</span><input type="number" oninput="window.updateBlockMath(\'' + blockId + '\')" class="w-12 p-1 border border-amber-300 dark:border-amber-700 rounded font-black text-center outline-none color-scheme-dark qc-inp-actrep-nvj ' + dFzClass + '" value="' + door.repNvj + '" ' + dFzAttr + '></div>' +
+                    '</div></div>';
+            }
 
-        html += '<div class="col-span-1 md:col-span-2 flex justify-between md:justify-center items-center"><span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">Photo</span><div class="flex flex-col items-center gap-1 w-24"><img id="' + uniqImgId + '" src="' + window.parseImgUrl(doorPhotoRaw) + '" class="w-20 h-20 rounded-lg object-cover border-2 border-slate-200 dark:border-slate-700 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition hover:scale-110 shadow-sm" onclick="window.openLightbox(\'' + doorPhotoRaw + '\')"><button onclick="window.overrideRowPhoto(\'' + uniqImgId + '\')" class="text-[8px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800 transition w-full">Override</button><p class="text-[7px] text-center font-bold text-slate-400 uppercase leading-tight bg-slate-50 dark:bg-slate-800 p-1 rounded border border-slate-100 dark:border-slate-700 w-full mt-1">' + parsePDate(door.enterOn, door.enterBy) + '</p></div></div>' +
+            html += repUI + '</div>';
+
+            html += '<div class="col-span-1 md:col-span-2 flex justify-between md:justify-center items-center"><span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">Photo</span><div class="flex flex-col items-center gap-1 w-24"><img id="' + uniqImgId + '" src="' + window.parseImgUrl(doorPhotoRaw) + '" class="w-20 h-20 rounded-lg object-cover border-2 border-slate-200 dark:border-slate-700 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition hover:scale-110 shadow-sm" onclick="window.openLightbox(\'' + doorPhotoRaw + '\')"><button onclick="window.overrideRowPhoto(\'' + uniqImgId + '\')" class="text-[8px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800 transition w-full">Override</button><p class="text-[7px] text-center font-bold text-slate-400 uppercase leading-tight bg-slate-50 dark:bg-slate-800 p-1 rounded border border-slate-100 dark:border-slate-700 w-full mt-1">' + parsePDate(door.enterOn, door.enterBy) + '</p></div></div>' +
                 '<div class="col-span-1 md:col-span-2 flex justify-between md:justify-center items-center"><span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</span><label class="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 dark:hover:border-emerald-800 transition"><input type="checkbox" onchange="window.toggleDoorQC(this, \'' + blockId + '\')" class="w-5 h-5 rounded text-emerald-600 dark:text-emerald-500 qc-door-chk" ' + isDoorChecked + '><span class="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">Verify</span></label></div>' +
                 '</div>';
         }
@@ -802,7 +811,7 @@ window.renderQCDashboard = function (blocksData) {
     container.innerHTML = html;
 };
 
-window.openExceptionReview = function() {
+window.openExceptionReview = function () {
     var modal = document.getElementById('admin-exception-modal');
     if (modal && modal.parentNode !== document.body) {
         document.body.appendChild(modal);
@@ -810,26 +819,26 @@ window.openExceptionReview = function() {
 
     var container = document.getElementById('exception-table-container');
     var headerHTML = '<table class="w-full text-left border-collapse"><thead class="bg-amber-100 dark:bg-amber-900/80 text-amber-900 dark:text-amber-400 text-[10px] uppercase tracking-widest sticky top-0 shadow-sm z-10 transition-colors"><tr><th class="p-4 border-b border-amber-200 dark:border-amber-800">Location</th><th class="p-4 border-b border-amber-200 dark:border-amber-800 text-center">Ordered (Ord)</th><th class="p-4 border-b border-amber-200 dark:border-amber-800 text-center">Actual Delivered (Act)</th><th class="p-4 border-b border-amber-200 dark:border-amber-800 text-center">Shortage</th><th class="p-4 border-b border-amber-200 dark:border-amber-800">Driver Note / Exception</th><th class="p-4 border-b border-amber-200 dark:border-amber-800 text-center">Rollover / Status</th></tr></thead><tbody class="divide-y divide-slate-200 dark:divide-slate-700 text-xs transition-colors">';
-    
+
     var varianceRowsHtml = '';
     var infoRowsHtml = '';
     var count = 0;
-    var collisionCpns = []; 
+    var collisionCpns = [];
 
     for (var blockId in window.cachedQCBlocksData) {
         var block = window.cachedQCBlocksData[blockId];
         block.doors.forEach(d => {
             var state = window.getDoorExceptionState(d);
-            
+
             if (state.isException) {
                 count++;
                 var chk = d.rollover ? 'checked' : '';
                 var actD = d.dvj + d.dnvj;
                 var actE = d.evj + d.envj;
-                
+
                 var reqRep = d.replaceQty || 0;
                 var actRep = (d.repVj || 0) + (d.repNvj || 0);
-                
+
                 var isZeroActualAndZeroOrdered = (d.ordD === 0 && actD === 0 && d.ordE === 0 && actE === 0 && reqRep === 0 && actRep === 0);
                 var isCancelled = state.cleanComment.includes("[CANCELLED");
 
@@ -845,20 +854,20 @@ window.openExceptionReview = function() {
                 }
 
                 var ordStr = '<span class="font-black text-slate-700 dark:text-slate-200 block">' + d.ordD + ' Full</span><span class="text-slate-500 dark:text-slate-400 font-bold block">' + d.ordE + ' Emp</span>';
-                if (reqRep > 0) ordStr += '<span class="text-amber-600 dark:text-amber-500 font-black block mt-1">+' + reqRep + ' Rep</span>'; 
+                if (reqRep > 0) ordStr += '<span class="text-amber-600 dark:text-amber-500 font-black block mt-1">+' + reqRep + ' Rep</span>';
 
                 var actStr = '';
                 if (actD === 0 && actE === 0 && actRep === 0) {
                     actStr = '<span class="bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 px-2 py-0.5 rounded font-black inline-block">0 Delivered</span>';
                 } else {
                     actStr = '<span class="font-black text-emerald-700 dark:text-emerald-400 block">' + actD + ' Full</span><span class="text-emerald-600 dark:text-emerald-500 font-bold block">' + actE + ' Emp</span>';
-                    if (reqRep > 0 || actRep > 0) actStr += '<span class="text-amber-600 dark:text-amber-500 font-black block mt-1">+' + actRep + ' Rep</span>'; 
+                    if (reqRep > 0 || actRep > 0) actStr += '<span class="text-amber-600 dark:text-amber-500 font-black block mt-1">+' + actRep + ' Rep</span>';
                 }
 
                 var shortageStr = '';
                 if (d.ordD > actD) shortageStr += '<span class="text-rose-600 dark:text-rose-400 font-black block">-' + (d.ordD - actD) + ' Full</span>';
                 if (d.ordE > actE) shortageStr += '<span class="text-rose-600 dark:text-rose-400 font-black block">-' + (d.ordE - actE) + ' Emp</span>';
-                if (reqRep > actRep) shortageStr += '<span class="text-rose-600 dark:text-rose-400 font-black block">-' + (reqRep - actRep) + ' Rep</span>'; 
+                if (reqRep > actRep) shortageStr += '<span class="text-rose-600 dark:text-rose-400 font-black block">-' + (reqRep - actRep) + ' Rep</span>';
                 if (!state.isShort) shortageStr = '<span class="text-slate-400 dark:text-slate-500 font-bold">None</span>';
 
                 var cmtStr = state.cleanComment ? '<span class="bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-800 px-2 py-1.5 rounded text-[10px] font-black uppercase shadow-sm inline-block">' + state.cleanComment + '</span>' : '<span class="text-slate-400 dark:text-slate-500 italic">No note provided</span>';
@@ -870,10 +879,10 @@ window.openExceptionReview = function() {
                     actionCell = '<span class="text-[10px] font-bold text-rose-500 dark:text-rose-400 uppercase tracking-widest">Cancelled</span>';
                 } else if (state.isShort) {
                     actionCell = '<label class="relative inline-flex items-center cursor-pointer" title="Toggle sending this shortage to tomorrow\'s route">' +
-                                 '<input type="checkbox" class="sr-only peer" ' + chk + ' onchange="window.toggleRolloverLive(\'' + blockId + '\', \'' + d.uniqueNo + '\', this)">' +
-                                 '<div class="w-11 h-6 bg-slate-300 dark:bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[\'\'] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 dark:after:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>' +
-                                 '</label>' +
-                                 '<span class="block text-[8px] text-slate-400 dark:text-slate-500 mt-1.5 font-black uppercase tracking-widest h-3 save-status-' + d.uniqueNo + '"></span>';
+                        '<input type="checkbox" class="sr-only peer" ' + chk + ' onchange="window.toggleRolloverLive(\'' + blockId + '\', \'' + d.uniqueNo + '\', this)">' +
+                        '<div class="w-11 h-6 bg-slate-300 dark:bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[\'\'] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 dark:after:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>' +
+                        '</label>' +
+                        '<span class="block text-[8px] text-slate-400 dark:text-slate-500 mt-1.5 font-black uppercase tracking-widest h-3 save-status-' + d.uniqueNo + '"></span>';
                 } else {
                     actionCell = '<span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">No Shortage</span>';
                 }
@@ -885,13 +894,13 @@ window.openExceptionReview = function() {
                 var rowClass = hasOrd2Collision ? 'bg-rose-100 dark:bg-rose-900/20 hover:bg-rose-200 dark:hover:bg-rose-900/40 border-l-4 border-rose-600 transition-colors' : 'hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors';
 
                 var rowHtml = '<tr id="exc-row-' + d.uniqueNo + '" class="' + rowClass + '">' +
-                        '<td class="p-4 border-b border-slate-200/50 dark:border-slate-700/50"><p class="font-black text-slate-800 dark:text-white text-sm">' + block.apartment + ' - ' + block.blockName + '</p><p class="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest mt-1">Door ' + d.doorNo + ' • <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 ml-1 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/50 hover:shadow-sm active:scale-95 transition-all cursor-pointer group" onclick="window.openCustomer360(\'' + d.cpn + '\')">' + d.cpn + '</span></p>' + collisionBadge + '</td>' +
-                        '<td class="p-4 text-center border-b border-slate-200/50 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/30">' + ordStr + '</td>' +
-                        '<td class="p-4 text-center border-b border-slate-200/50 dark:border-slate-700/50">' + actStr + '</td>' +
-                        '<td class="p-4 text-center border-b border-slate-200/50 dark:border-slate-700/50 bg-rose-50/30 dark:bg-rose-900/10">' + shortageStr + '</td>' +
-                        '<td class="p-4 border-b border-slate-200/50 dark:border-slate-700/50">' + cmtStr + '</td>' +
-                        '<td class="p-4 text-center border-b border-slate-200/50 dark:border-slate-700/50">' + actionCell + '</td>' +
-                        '</tr>';
+                    '<td class="p-4 border-b border-slate-200/50 dark:border-slate-700/50"><p class="font-black text-slate-800 dark:text-white text-sm">' + block.apartment + ' - ' + block.blockName + '</p><p class="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest mt-1">Door ' + d.doorNo + ' • <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 ml-1 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/50 hover:shadow-sm active:scale-95 transition-all cursor-pointer group" onclick="window.openCustomer360(\'' + d.cpn + '\')">' + d.cpn + '</span></p>' + collisionBadge + '</td>' +
+                    '<td class="p-4 text-center border-b border-slate-200/50 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/30">' + ordStr + '</td>' +
+                    '<td class="p-4 text-center border-b border-slate-200/50 dark:border-slate-700/50">' + actStr + '</td>' +
+                    '<td class="p-4 text-center border-b border-slate-200/50 dark:border-slate-700/50 bg-rose-50/30 dark:bg-rose-900/10">' + shortageStr + '</td>' +
+                    '<td class="p-4 border-b border-slate-200/50 dark:border-slate-700/50">' + cmtStr + '</td>' +
+                    '<td class="p-4 text-center border-b border-slate-200/50 dark:border-slate-700/50">' + actionCell + '</td>' +
+                    '</tr>';
 
                 if (state.hasVariance) varianceRowsHtml += rowHtml;
                 else infoRowsHtml += rowHtml;
@@ -910,23 +919,23 @@ window.openExceptionReview = function() {
     } else {
         container.innerHTML = topBanner + headerHTML + varianceRowsHtml + infoRowsHtml + footerHtml;
     }
-    
+
     // SPA Standard Modal Open
-    if(typeof window.toggleScrollLock === 'function') window.toggleScrollLock(true);
+    if (typeof window.toggleScrollLock === 'function') window.toggleScrollLock(true);
     document.getElementById('admin-exception-modal').classList.remove('hidden');
 };
 
-window.closeExceptionReview = function () { 
-    if(typeof window.toggleScrollLock === 'function') window.toggleScrollLock(false);
-    document.getElementById('admin-exception-modal').classList.add('hidden'); 
+window.closeExceptionReview = function () {
+    if (typeof window.toggleScrollLock === 'function') window.toggleScrollLock(false);
+    document.getElementById('admin-exception-modal').classList.add('hidden');
 };
 
 window.toggleDoorQC = function (checkbox, blockId) {
     var row = checkbox.closest('.qc-door-row');
     var inputs = row.querySelectorAll('input[type="number"]');
-    var rIdx = parseInt(row.getAttribute('data-row-idx')); 
+    var rIdx = parseInt(row.getAttribute('data-row-idx'));
     var bData = window.cachedQCBlocksData[blockId];
-    
+
     if (checkbox.checked) {
         inputs.forEach(inp => { inp.disabled = true; inp.classList.add('bg-slate-200', 'dark:bg-slate-700', 'text-slate-400', 'dark:text-slate-500', 'border-slate-200', 'dark:border-slate-600'); });
         if (bData) {
@@ -947,7 +956,7 @@ window.unverifyBlock = function (blockId, skipSync) {
     var blockGroup = document.querySelector('.qc-block-group[data-block-id="' + blockId + '"]');
     var blockStatus = blockGroup.querySelector('.qc-block-status');
     if (blockStatus.innerText === "PENDING") return;
-    
+
     blockStatus.innerText = "PENDING";
     blockStatus.className = "qc-block-status bg-slate-600 dark:bg-slate-500 px-3 py-1 rounded font-bold text-xs text-white";
     blockGroup.querySelector('.block-transfer-chk').checked = false;
@@ -1018,15 +1027,15 @@ window.autoVerifyPerfectBlocks = function () {
         window.startQCTimer('Auto-Verifying');
         Promise.all(promises).then(() => {
             window.stopQCTimer('Verified', false);
-            if(window.showToast) window.showToast("⚡ Auto-Verified " + verifiedCount + " perfect blocks!", "success");
+            if (window.showToast) window.showToast("⚡ Auto-Verified " + verifiedCount + " perfect blocks!", "success");
         });
         window.updateHeaderCounts(); window.checkTransferReady(); window.sortBlocks();
     } else {
-        if(window.showToast) window.showToast("No perfect matches found.", "warning");
+        if (window.showToast) window.showToast("No perfect matches found.", "warning");
     }
 };
 
-window.populateQCFilters = function (blocksData) { 
+window.populateQCFilters = function (blocksData) {
     var aptSelect = document.getElementById('qc-flt-apt');
     var apts = new Set();
     for (var key in blocksData) apts.add(blocksData[key].apartment);
@@ -1036,7 +1045,7 @@ window.populateQCFilters = function (blocksData) {
     window.updateQCBlockDropdown();
 };
 
-window.updateQCBlockDropdown = function () { 
+window.updateQCBlockDropdown = function () {
     var selApt = document.getElementById('qc-flt-apt').value;
     var blkSelect = document.getElementById('qc-flt-blk');
     var blks = new Set();
@@ -1049,7 +1058,7 @@ window.updateQCBlockDropdown = function () {
     window.applyQCFilter();
 };
 
-window.setStatusFilter = function (status) { 
+window.setStatusFilter = function (status) {
     window.currentStatusFilter = status;
     ['all', 'pend', 'fin'].forEach(id => document.getElementById('btn-flt-' + id).className = "flex-1 text-[10px] md:text-xs font-black py-2.5 rounded-lg text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 transition tracking-widest uppercase");
     var activeId = status === 'ALL' ? 'all' : (status === 'PENDING' ? 'pend' : 'fin');
@@ -1058,7 +1067,7 @@ window.setStatusFilter = function (status) {
     window.applyQCFilter();
 };
 
-window.applyQCFilter = function () { 
+window.applyQCFilter = function () {
     var selApt = document.getElementById('qc-flt-apt').value;
     var selBlk = document.getElementById('qc-flt-blk').value;
     var selExc = document.getElementById('qc-flt-exc') ? document.getElementById('qc-flt-exc').value : "ALL";
@@ -1072,7 +1081,7 @@ window.applyQCFilter = function () {
         if (window.currentStatusFilter === 'VERIFIED') matchStatus = bData.isBlockVerified;
         var matchExc = true;
         if (selExc === "EXCEPTIONS") {
-            matchExc = false; 
+            matchExc = false;
             bData.doors.forEach(d => { if (window.getDoorExceptionState(d).isException) matchExc = true; });
         }
         if (matchApt && matchBlk && matchStatus && matchExc) block.style.display = "";
@@ -1080,7 +1089,7 @@ window.applyQCFilter = function () {
     });
 };
 
-window.sortBlocks = function () { 
+window.sortBlocks = function () {
     var container = document.getElementById('qc-blocks-container');
     var blocks = Array.from(container.querySelectorAll('.qc-block-group'));
     blocks.sort((a, b) => {
@@ -1091,21 +1100,21 @@ window.sortBlocks = function () {
     blocks.forEach(block => container.appendChild(block));
 };
 
-window.toggleAllVerifiedBlocks = function (mainCheckbox) { 
+window.toggleAllVerifiedBlocks = function (mainCheckbox) {
     var isChecked = mainCheckbox.checked;
     document.querySelectorAll('.block-transfer-chk:not(.hidden)').forEach(chk => {
         var blockGroup = chk.closest('.qc-block-group');
         if (blockGroup.style.display !== 'none') {
             chk.checked = isChecked;
             var blockId = chk.value;
-            if (isChecked) { if (!window.selectedBlocks.includes(blockId)) window.selectedBlocks.push(blockId); } 
+            if (isChecked) { if (!window.selectedBlocks.includes(blockId)) window.selectedBlocks.push(blockId); }
             else window.selectedBlocks = window.selectedBlocks.filter(id => id !== blockId);
         }
     });
     window.checkTransferReady();
 };
 
-window.checkTransferReady = function () { 
+window.checkTransferReady = function () {
     var transferBtn = document.getElementById('btn-transfer-sales');
     var count = window.selectedBlocks.length;
     if (count > 0) {
@@ -1116,15 +1125,15 @@ window.checkTransferReady = function () {
     transferBtn.innerHTML = '<svg class="w-4 h-4 md:w-5 md:h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Process <span class="hidden sm:inline">Selected</span> (' + count + ')';
 };
 
-window.toggleBlockSelection = function (checkbox, blockId) { 
-    if (checkbox.checked) { if (!window.selectedBlocks.includes(blockId)) window.selectedBlocks.push(blockId); } 
+window.toggleBlockSelection = function (checkbox, blockId) {
+    if (checkbox.checked) { if (!window.selectedBlocks.includes(blockId)) window.selectedBlocks.push(blockId); }
     else window.selectedBlocks = window.selectedBlocks.filter(id => id !== blockId);
     window.checkTransferReady();
 };
 
-window.updateBlockMath = function (blockId, preventUnverify) { 
+window.updateBlockMath = function (blockId, preventUnverify) {
     var blockGroup = document.querySelector('.qc-block-group[data-block-id="' + blockId + '"]');
-    var bData = window.cachedQCBlocksData[blockId]; 
+    var bData = window.cachedQCBlocksData[blockId];
     var driverV2bF = parseInt(blockGroup.querySelector('.qc-inp-v2bf').value) || 0;
     var driverB2vF = parseInt(blockGroup.querySelector('.qc-inp-b2vf').value) || 0;
     var driverB2vE = parseInt(blockGroup.querySelector('.qc-inp-b2ve').value) || 0;
@@ -1132,7 +1141,7 @@ window.updateBlockMath = function (blockId, preventUnverify) {
     blockGroup.querySelector('.qc-disp-b2ve').innerText = driverB2vE;
     var sumActD = 0, sumActE = 0, sumRep = 0;
     blockGroup.querySelectorAll('.qc-door-row').forEach(row => {
-        var rIdx = parseInt(row.getAttribute('data-row-idx')); 
+        var rIdx = parseInt(row.getAttribute('data-row-idx'));
         var dvj = parseInt(row.querySelector('.qc-inp-actd-vj').value) || 0;
         var dnvj = parseInt(row.querySelector('.qc-inp-actd-nvj').value) || 0;
         var evj = parseInt(row.querySelector('.qc-inp-acte-vj').value) || 0;
@@ -1238,13 +1247,13 @@ window.resetZoom = function () { window.lbScale = 1; window.lbPointX = 0; window
 
 window.openLightbox = function (url) {
     if (!url || url.trim() === "") {
-        if(window.showToast) window.showToast("No photo provided.", "warning");
+        if (window.showToast) window.showToast("No photo provided.", "warning");
         return;
     }
-    
+
     // SPA FIX: Scroll Lock
-    if(typeof window.toggleScrollLock === 'function') window.toggleScrollLock(true);
-    
+    if (typeof window.toggleScrollLock === 'function') window.toggleScrollLock(true);
+
     window.initLightbox();
     document.getElementById('lb-img').src = window.parseImgUrl(url);
     window.resetZoom();
@@ -1256,10 +1265,10 @@ window.openLightbox = function (url) {
 window.closeLightbox = function () {
     var lb = document.getElementById('qc-lightbox');
     lb.classList.add('opacity-0');
-    setTimeout(function () { 
-        lb.classList.add('hidden'); 
+    setTimeout(function () {
+        lb.classList.add('hidden');
         // SPA FIX: Release Scroll Lock
-        if(typeof window.toggleScrollLock === 'function') window.toggleScrollLock(false);
+        if (typeof window.toggleScrollLock === 'function') window.toggleScrollLock(false);
     }, 300);
 };
 
@@ -1267,7 +1276,7 @@ document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') {
         var lb = document.getElementById('qc-lightbox');
         if (lb && !lb.classList.contains('hidden')) window.closeLightbox();
-        
+
         var ex = document.getElementById('admin-exception-modal');
         if (ex && !ex.classList.contains('hidden')) window.closeExceptionReview();
     }
@@ -1284,4 +1293,4 @@ window.scrollAdminTo = function (pos) {
     });
 };
 
-window.tabActions['tran-delivery'] = function(arg) { window.loadDeliveryQCData(arg); };
+window.tabActions['tran-delivery'] = function (arg) { window.loadDeliveryQCData(arg); };

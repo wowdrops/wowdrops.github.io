@@ -614,32 +614,38 @@ window.executeBatchTransferToDel2 = async function () {
 
       // NEW: Queue Admin Alert
       try {
-          // Fetch all ADMIN users
-          const { data: adminUsers } = await window.supabase1.from('users').select('username').contains('app_roles', { ADMIN: [] });
-          
-          if (adminUsers && adminUsers.length > 0) {
-              const notifPayload = adminUsers.map(user => ({
-                  cpn_no: user.username, // Store admin username here for edge function to read
-                  channel: 'WHATSAPP, FIREBASE',
-                  message_type: 'ADMIN_ALERT',
-                  status: 'PENDING',
-                  trigger_type: 'AUTO',
-                  target_channels: ['WHATSAPP', 'FIREBASE'],
-                  raw_payload: {
-                      title: 'Batch Transfer Complete',
-                      body: `${adminName} transferred ${result.transferred_count} orders to Deliveries.`,
-                      push_url: 'https://wowdrops.github.io/550_Admin_App.html',
-                      wa_template: 'admin_batch_alert', // REPALCE WITH YOUR ACTUAL META TEMPLATE NAME
-                      wa_variables: [adminName, result.transferred_count.toString(), 'Deliveries'] 
-                  },
-                  created_by: 'System'
-              }));
-              await window.supabase1.from('notification_logs').insert(notifPayload);
-          }
+        // Fetch all ADMIN users
+        const { data: adminUsers } = await window.supabase1.from('users').select('username').contains('app_roles', { ADMIN: [] });
+
+        if (adminUsers && adminUsers.length > 0) {
+          // Add this right before building the payload:
+          const activeChannelsStr = window.autoNotifyChannels || 'WHATSAPP,FIREBASE';
+          const activeChannelsArr = activeChannelsStr.split(',').map(s => s.trim());
+          const waTemplate = window.waTemplateAdminBatch || 'admin_batch_alert';
+
+          // Update your payload mapping:
+          const notifPayload = adminUsers.map(user => ({
+            cpn_no: user.username,
+            channel: activeChannelsStr, // <-- Now dynamic
+            message_type: 'ADMIN_ALERT',
+            status: 'PENDING',
+            trigger_type: 'AUTO',
+            target_channels: activeChannelsArr, // <-- Now dynamic
+            raw_payload: {
+              title: 'Batch Transfer Complete',
+              body: `${adminName} transferred ${result.transferred_count} orders to Deliveries.`,
+              push_url: 'https://wowdrops.github.io/550_Admin_App.html#dashboard',
+              wa_template: waTemplate, // <-- Now dynamic
+              wa_variables: [adminName, result.transferred_count.toString(), 'ORDERS']
+            },
+            created_by: 'executeBatchTransferToDel2'
+          }));
+          await window.supabase1.from('notification_logs').insert(notifPayload);
+        }
       } catch (err) {
-          console.error("Failed to queue admin alert:", err);
+        console.error("Failed to queue admin alert - MANAGE ORDERS:", err);
       }
-      
+
       window.loadTranOrdersData();
 
     } catch (err) {

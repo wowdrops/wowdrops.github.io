@@ -2,19 +2,22 @@
 // FIREBASE NOTIFICATIONS ENGINE
 // ==========================================
 
-const firebaseConfig = {
-  apiKey: "AIzaSyADBmoxl5J9anzwjJgpDQEuxvhfZvl9Dhk",
-  authDomain: "wowdropspush.firebaseapp.com",
-  projectId: "wowdropspush",
-  storageBucket: "wowdropspush.firebasestorage.app",
-  messagingSenderId: "907964211557",
-  appId: "1:907964211557:web:d53857dc437c403ad8818c"
+window.messaging = null;
+window.VAPID_PUBLIC_KEY = null;
+
+window.initFirebaseSystem = function (configStr, vapidKey) {
+  if (!configStr || !vapidKey) return;
+  try {
+    const config = JSON.parse(configStr);
+    if (!firebase.apps.length) {
+      firebase.initializeApp(config);
+    }
+    window.messaging = firebase.messaging();
+    window.VAPID_PUBLIC_KEY = vapidKey;
+  } catch (e) {
+    console.error("Dynamic Firebase Init Failed:", e);
+  }
 };
-
-firebase.initializeApp(firebaseConfig);
-const messaging = firebase.messaging();
-
-const VAPID_PUBLIC_KEY = "BKEhieRgAwDeodM7N8IVzeg9xlfmt06E4ynj9W-uWOs7Ad6RMNBykxAQ9TLY_Tz6NTc4flpHe8zsXaF_4cteLQs";
 
 // --- NEW: Generate and store device ID ---
 function getDeviceId() {
@@ -44,7 +47,7 @@ function triggerNotificationSetup() {
       return;
     }
 
-    Notification.requestPermission().then(function(permission) {
+    Notification.requestPermission().then(function (permission) {
       if (permission === 'granted') {
         subscribeUserToPush();
         checkPushBlockedBanner();
@@ -60,19 +63,19 @@ async function subscribeUserToPush() {
   try {
     const registration = await navigator.serviceWorker.register('firebase-messaging-sw.js');
     await navigator.serviceWorker.ready;
-    
-    const token = await messaging.getToken({
-      vapidKey: VAPID_PUBLIC_KEY,
+
+    const token = await window.messaging.getToken({
+      vapidKey: window.VAPID_PUBLIC_KEY,
       serviceWorkerRegistration: registration
     });
 
     if (token) {
       const deviceId = getDeviceId();
-      
+
       const { error } = await window.supabase1
         .from('push_subscriptions')
-        .upsert({ 
-          cpn_no: activeUserSession.cpn, 
+        .upsert({
+          cpn_no: activeUserSession.cpn,
           device_id: deviceId,
           subscription_json: { token: token },
           last_active: new Date().toISOString()
@@ -95,10 +98,11 @@ async function subscribeUserToPush() {
 // --- UPDATED: Proactive Database Check ---
 async function checkNotificationStatus() {
   if ('Notification' in window && Notification.permission === 'denied') {
-      return; // Handled by the passive banner
+    return; // Handled by the passive banner
   }
-  
+
   if (!activeUserSession || !activeUserSession.cpn) return;
+  
   const deviceId = getDeviceId();
 
   try {
@@ -108,16 +112,16 @@ async function checkNotificationStatus() {
       .eq('cpn_no', activeUserSession.cpn)
       .eq('device_id', deviceId)
       .maybeSingle();
-      
+
     if (data) {
-       // Device is registered, just update the last_active time silently
-       await window.supabase1
-         .from('push_subscriptions')
-         .update({ last_active: new Date().toISOString() })
-         .eq('id', data.id);
-       return; 
+      // Device is registered, just update the last_active time silently
+      await window.supabase1
+        .from('push_subscriptions')
+        .update({ last_active: new Date().toISOString() })
+        .eq('id', data.id);
+      return;
     }
-  } catch(err) {
+  } catch (err) {
     console.error("Push status check failed:", err);
   }
 
@@ -125,11 +129,11 @@ async function checkNotificationStatus() {
   var skippedTime = localStorage.getItem('notification_skipped_time');
   if (skippedTime) {
     var hoursElapsed = (new Date().getTime() - parseInt(skippedTime)) / (1000 * 60 * 60);
-    if (hoursElapsed < 1) return; 
+    if (hoursElapsed < 1) return;
   }
-  setTimeout(function () { 
-      var notifModal = document.getElementById('notification-modal');
-      if (notifModal) notifModal.classList.remove('hidden'); 
+  setTimeout(function () {
+    var notifModal = document.getElementById('notification-modal');
+    if (notifModal) notifModal.classList.remove('hidden');
   }, 500);
 }
 
@@ -140,7 +144,7 @@ function skipNotificationCapture() {
 
 function acceptNotificationCapture() {
   document.getElementById('notification-modal').classList.add('hidden');
-  triggerNotificationSetup(); 
+  triggerNotificationSetup();
 }
 
 // --- NEW UI FUNCTIONS ---

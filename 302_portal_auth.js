@@ -171,7 +171,7 @@ async function sendSetupOTP(isChangingEmail) {
 
       if (updateErr) throw updateErr;
 
-      await fetch(GAS_WEBHOOK_URL, {
+      await fetch(window.GAS_WEBHOOK_URL, {
           method: 'POST',
           body: JSON.stringify({ email: targetEmail, otp: otp }),
           headers: { 'Content-Type': 'text/plain;charset=utf-8' }
@@ -301,7 +301,7 @@ async function requestOTP() {
 
       if (updateErr) throw updateErr;
 
-      await fetch(GAS_WEBHOOK_URL, {
+      await fetch(window.GAS_WEBHOOK_URL, {
           method: 'POST',
           body: JSON.stringify({ email: targetEmail, otp: otp }),
           headers: { 'Content-Type': 'text/plain;charset=utf-8' }
@@ -461,11 +461,12 @@ function openChangePassword() {
 
 function checkEmailCollection() {
   if (!activeUserSession.email && sessionStorage.getItem('email_skipped') !== 'true') {
+    // Show email modal first
     setTimeout(function () { document.getElementById('email-modal').classList.remove('hidden'); }, 1500);
+  } else {
+    // Only check notifications immediately if we ARE NOT showing the email modal
+    if (typeof checkNotificationStatus === "function") checkNotificationStatus();
   }
-   
-  if (typeof checkNotificationStatus === "function") checkNotificationStatus();
-  
 }
 
 function skipEmailCapture() {

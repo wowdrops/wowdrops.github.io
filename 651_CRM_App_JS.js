@@ -284,7 +284,10 @@ window.crmSubmitInteraction = async function() {
         const { error: err1 } = await window.supabase1.from('crm_dormant_call_logs').update(payload).eq('cpn_no', cpn);
         if(err1) throw err1;
 
-        const { error: err2 } = await window.supabase1.from('ac_customers').update({ final_status: payload.new_customer_status }).eq('cpn_no', cpn);
+        const { error: err2 } = await window.supabase1.from('ac_customers').update({ 
+            final_status: payload.new_customer_status, 
+            inactive_reason: payload.reason_for_dormancy 
+        }).eq('cpn_no', cpn);
         if(err2) throw err2;
 
         if (window.showToast) window.showToast("Interaction logged successfully!", "success");

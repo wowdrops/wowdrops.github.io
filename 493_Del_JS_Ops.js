@@ -727,6 +727,9 @@
                     var recRepVj = isSaved ? (savedItem.repActVj || 0) : (d.replaceActVj || 0);
                     var recRepNvj = isSaved ? (savedItem.repActNvj || 0) : (d.replaceActNvj || 0);
 
+                    var ordCmt = d.ordComment || "";    //added now
+                    var delCmt = d.delComment || "";    //added now
+
                     var card = document.createElement('div');
                     card.className = "bg-white border border-slate-200 rounded-2xl p-4 shadow-sm relative mb-4";
 
@@ -753,6 +756,22 @@
                                 '</div>';
                         }
 
+                        // added Now
+                        if(ordCmt && ordCmt.trim() !== "") {
+                            html += '<div class="bg-slate-50 text-slate-900 p-3 rounded-xl text-xs font-bold border border-slate-200 shadow-inner mb-3 space-y-1">' +
+                                '<div class="text-slate-700 uppercase mb-1 border-b border-slate-200/60 pb-1">📝 Order Comment</div>' +
+                                '<div class="text-[10px]">' + ordCmt + '</div>' +
+                                '</div>';
+                        }
+
+                        if(delCmt && delCmt.trim() !== "") {
+                            html += '<div class="bg-slate-100 text-slate-900 p-3 rounded-xl text-xs font-bold border border-slate-200 shadow-inner mb-3 space-y-1">' +
+                                '<div class="text-slate-700 uppercase mb-1 border-b border-slate-200/60 pb-1">📝 Delivery Comment</div>' +
+                                '<div class="text-[10px]">' + delCmt + '</div>' +
+                                '</div>';
+                        }
+                        // added Now - end
+
                         html += '<button onclick="window.editDoor(\'' + d.uniqueNo + '\')" class="w-full bg-white text-slate-600 font-black p-2.5 rounded-xl text-xs border border-slate-200 hover:bg-slate-50 mt-3">Edit Entry</button>';
                     } else {
                         html += '<div class="bg-blue-50 border border-blue-100 rounded-lg p-2.5 mb-3 shadow-inner"><p class="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-1.5 border-b border-blue-100 pb-1">ORDER</p><div class="flex justify-between items-center"><div class="text-[11px] font-black text-blue-900 pr-2 border-r border-blue-200">ORD FULL: ' + expVj + ' VJ | ' + expNvj + ' NVJ</div><div class="text-[11px] font-black text-blue-900 pl-2">ORD EMPTY: ' + d.ordE + ' Total</div></div></div>';
@@ -766,6 +785,22 @@
                                 '<div class="grid grid-cols-2 gap-2 mt-2"><div class="bg-white p-1.5 rounded-xl border border-slate-200"><label class="text-[9px] font-black text-slate-500 block mb-1 text-center">COLLECT VJ</label><div class="flex items-center"><button onclick="window.adjustQty(\'repActVj-' + d.uniqueNo + '\', -1)" class="px-3 font-black text-lg">-</button><input type="number" id="repActVj-' + d.uniqueNo + '" value="' + recRepVj + '" class="w-full text-center font-black text-lg outline-none bg-transparent" data-max="' + rQty + '"><button onclick="window.adjustQty(\'repActVj-' + d.uniqueNo + '\', 1)" class="px-3 font-black text-lg">+</button></div></div><div class="bg-white p-1.5 rounded-xl border border-slate-200"><label class="text-[9px] font-black text-slate-500 block mb-1 text-center">COLLECT NVJ</label><div class="flex items-center"><button onclick="window.adjustQty(\'repActNvj-' + d.uniqueNo + '\', -1)" class="px-3 font-black text-lg">-</button><input type="number" id="repActNvj-' + d.uniqueNo + '" value="' + recRepNvj + '" class="w-full text-center font-black text-lg outline-none bg-transparent" data-max="' + rQty + '"><button onclick="window.adjustQty(\'repActNvj-' + d.uniqueNo + '\', 1)" class="px-3 font-black text-lg">+</button></div></div></div>' +
                                 '<p class="text-[9px] text-amber-700 font-bold mt-1.5 text-center">Do not collect more than ' + rQty + ' cans total.</p></div>';
                         }
+
+                        // added Now
+                        if(ordCmt && ordCmt.trim() !== "") {
+                            html += '<div class="bg-slate-50 text-slate-700 p-3 rounded-xl text-xs font-bold border border-slate-200 shadow-inner mb-3 space-y-1">' +
+                                '<div class="text-slate-700 uppercase mb-1 border-b border-slate-200/60 pb-1">📝 Order Comment</div>' +
+                                '<div class="text-[10px]">' + ordCmt + '</div>' +
+                                '</div>';
+                        }
+
+                        if(delCmt && delCmt.trim() !== "") {
+                            html += '<div class="bg-slate-100 text-slate-700 p-3 rounded-xl text-xs font-bold border border-slate-200 shadow-inner mb-3 space-y-1">' +
+                                '<div class="text-slate-700 uppercase mb-1 border-b border-slate-200/60 pb-1">📝 Delivery Comment</div>' +
+                                '<div class="text-[10px]">' + delCmt + '</div>' +
+                                '</div>';
+                        }
+                        // added Now - end
 
                         html += '<input type="file" id="photo-' + d.uniqueNo + '" accept="image/*" capture="environment" class="text-xs block w-full border border-slate-200 p-1.5 rounded-lg bg-slate-50 mb-2">';
                         html += '<input type="text" id="comment-' + d.uniqueNo + '" placeholder="Optional Note..." class="w-full text-xs font-bold p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none mb-3 shadow-inner">';
