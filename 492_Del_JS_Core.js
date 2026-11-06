@@ -606,13 +606,12 @@
                 if (todayTrips && todayTrips.length > 0) {
                     activeTripId = todayTrips[0].id;
                 } else {
-                    // 1. Calculate Dispatch Requirements using the safely fetched vjPrice
                     let routeDispatchVj = 0;
                     let routeDispatchNvj = 0;
                     (routeData || []).forEach(row => {
                         let ordD = Number(row.ord_d || 0);
                         let repQty = Number(row.replace_qty || 0);
-                        let totalNeeded = ordD + repQty; // Add replacements to the morning load!
+                        let totalNeeded = ordD + repQty;
 
                         let advance = Number(row.can_deposit || row.advance_amount || 0);
                         let maxVj = Math.floor(advance / vjPrice);
@@ -624,7 +623,6 @@
 
                     let driverEmail = window.currentUser.role.includes('DRIVER') ? window.currentUser.username : 'AUTO_CREATED_FOR_TEAM';
 
-                    // 2. Create the Active Trip in eod_log
                     const { data: newTrip, error: tripErr } = await supa
                         .from('eod_log')
                         .insert([{
@@ -636,14 +634,19 @@
                     if (tripErr) throw tripErr;
                     activeTripId = newTrip.id;
 
-                    // 3. Log the morning load in van_dispatch_log to trigger Inventory Movement!
                     await supa.from('van_dispatch_log').insert([{
                         dispatch_date: todayStr,
                         driver_mail_id: driverEmail,
                         load_full_vj: routeDispatchVj,
-                        load_full_nvj: routeDispatchNvj
+                        load_full_nvj: routeDispatchNvj,
+                        trip_id: activeTripId // <-- STAMPS TRIP ID
                     }]);
                 }
+
+                // <-- NEW: Stamp all untracked deliveries with this active Trip ID
+                await supa.from('deliveries')
+                    .update({ trip_id: activeTripId })
+                    .is('trip_id', null);
 
                 // Ensure user is clocked in to THIS specific trip
                 const { data: myShift } = await supa

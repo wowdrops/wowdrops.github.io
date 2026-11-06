@@ -139,13 +139,13 @@ window.openCrewModal = async function(tripId, driverName) {
             .from('shift_log')
             .select('*')
             .eq('trip_id', tripId)
-            .eq('status', 'Active')
+            // Removed the .eq('status', 'Active') filter to show ALL crew
             .order('created_at', { ascending: true });
 
         if (error) throw error;
 
         if (!data || data.length === 0) {
-            container.innerHTML = '<p class="text-center text-sm font-bold text-slate-500 dark:text-slate-400 py-6">No active crew members found for this trip.</p>';
+            container.innerHTML = '<p class="text-center text-sm font-bold text-slate-500 dark:text-slate-400 py-6">No crew members found for this trip.</p>';
             return;
         }
 
@@ -155,25 +155,38 @@ window.openCrewModal = async function(tripId, driverName) {
                 ? '<span class="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800 text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-widest">Driver</span>'
                 : '<span class="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-widest">Helper</span>';
 
+            var statusBadge = crew.status === 'Completed'
+                ? '<span class="text-[9px] text-emerald-600 dark:text-emerald-500 font-black tracking-widest uppercase ml-2">✓ Closed</span>'
+                : '<span class="text-[9px] text-amber-600 dark:text-amber-500 font-black tracking-widest uppercase ml-2 animate-pulse">⏳ Open</span>';
+
             var isMainDriver = crew.mail_id.toLowerCase() === driverName.toLowerCase();
             
-            // Only allow kicking out helpers or incorrect extra drivers
-            var removeBtn = !isMainDriver 
-                ? `<button onclick="window.removeCrewMember(${crew.id}, ${tripId}, '${driverName}')" class="text-rose-500 hover:text-white bg-rose-50 dark:bg-rose-900/20 hover:bg-rose-600 dark:hover:bg-rose-700 border border-rose-200 dark:border-rose-800/50 p-2 rounded-lg transition-colors outline-none" title="Kick from Trip">
-                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6"></path></svg>
-                   </button>`
-                : `<span class="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest px-2">Master</span>`;
+            var actionBtn = '';
+            if (crew.status === 'Completed') {
+                actionBtn = '<span class="text-[9px] font-black text-emerald-500 uppercase tracking-widest px-3">Done</span>';
+            } else if (isMainDriver) {
+                // If main driver is stuck open, Admin can FORCE CLOSE them rather than delete them
+                actionBtn = `<button onclick="window.forceCloseCrewMember(${crew.id}, ${tripId}, '${driverName}')" class="text-amber-500 hover:text-white bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-600 dark:hover:bg-amber-700 border border-amber-200 dark:border-amber-800/50 p-2 rounded-lg transition-colors outline-none" title="Force Close Shift">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                             </button>`;
+            } else {
+                // If a helper is stuck open, Admin can kick/delete them
+                actionBtn = `<button onclick="window.removeCrewMember(${crew.id}, ${tripId}, '${driverName}')" class="text-rose-500 hover:text-white bg-rose-50 dark:bg-rose-900/20 hover:bg-rose-600 dark:hover:bg-rose-700 border border-rose-200 dark:border-rose-800/50 p-2 rounded-lg transition-colors outline-none" title="Kick from Trip">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6"></path></svg>
+                             </button>`;
+            }
 
             html += `
             <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-sm transition-colors">
                 <div>
                     <p class="font-black text-sm text-slate-800 dark:text-white">${crew.mail_id}</p>
-                    <div class="flex items-center gap-2 mt-1">
+                    <div class="flex items-center gap-1 mt-1">
                         ${roleBadge}
-                        <span class="text-[9px] font-bold text-slate-400">In: ${window.formatDisplayDate(crew.clock_in)}</span>
+                        ${statusBadge}
                     </div>
+                    <p class="text-[9px] font-bold text-slate-400 mt-1">In: ${window.formatDisplayDate(crew.clock_in)}</p>
                 </div>
-                ${removeBtn}
+                ${actionBtn}
             </div>`;
         });
 
@@ -182,6 +195,24 @@ window.openCrewModal = async function(tripId, driverName) {
     } catch (err) {
         if(window.showToast) window.showToast("Crew Fetch Error: " + err.message, "error");
         container.innerHTML = '<p class="text-center text-rose-500 font-bold text-xs uppercase tracking-widest py-6">Failed to load crew.</p>';
+    }
+};
+
+// ADD THIS NEW FUNCTION ANYWHERE IN THE FILE
+window.forceCloseCrewMember = async function(shiftId, tripId, driverName) {
+    if(!confirm("Force close this user's shift? This will mark their handshake as completed for Delivery QC.")) return;
+    try {
+        const { error } = await window.supabase1
+            .from('shift_log')
+            .update({ status: 'Completed', clock_out: new Date().toISOString() })
+            .eq('id', shiftId);
+
+        if (error) throw error;
+        
+        if(window.showToast) window.showToast("Shift manually closed.", "success");
+        window.openCrewModal(tripId, driverName); 
+    } catch (err) {
+        if(window.showToast) window.showToast("Failed to close shift: " + err.message, "error");
     }
 };
 
@@ -284,7 +315,7 @@ window.loadHandshakeHistory = async function() {
         if (error) throw error;
 
         if (!data || data.length === 0) {
-            if(tbody) tbody.innerHTML = '<tr><td colspan="9" class="text-center py-12 text-slate-400 font-bold uppercase tracking-widest text-xs">No records found.</td></tr>';
+            if(tbody) tbody.innerHTML = '<tr><td colspan="10" class="text-center py-12 text-slate-400 font-bold uppercase tracking-widest text-xs">No records found.</td></tr>';
             window.stopHsTimer('Updated', false);
             return;
         }
@@ -293,9 +324,14 @@ window.loadHandshakeHistory = async function() {
         data.forEach(function(log) {
             var reconStr = '';
             var rs = String(log.recon_status || 'PENDING').toUpperCase();
-            if(rs === 'MATCHED') reconStr = '<span class="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-widest shadow-sm">Matched</span>';
-            else if(rs === 'SHORTAGE') reconStr = '<span class="bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-widest shadow-sm cursor-pointer" title="' + (log.godown_variance_reason || 'Variance found') + '">Shortage ⚠️</span>';
+            
+            // FIXED STATUS MATCHING
+            if(rs === 'COMPLETED') reconStr = '<span class="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-widest shadow-sm">Matched</span>';
+            else if(rs === 'COMPLETED (SHORTAGE)') reconStr = '<span class="bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-widest shadow-sm cursor-pointer" title="' + (log.godown_variance_reason || 'Variance found') + '">Shortage ⚠️</span>';
             else reconStr = '<span class="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800 text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-widest shadow-sm">Pending QC</span>';
+
+            // ADDED CREW BUTTON FOR HISTORY ROWS
+            var crewBtn = `<button onclick="window.openCrewModal(${log.id}, '${log.driver_mail_id}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg shadow-sm text-[9px] font-black uppercase tracking-widest transition-colors dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40 dark:text-indigo-400 dark:border-indigo-800 outline-none">Crew</button>`;
 
             html += `
             <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors border-b border-slate-100 dark:border-slate-800/60">
@@ -311,6 +347,7 @@ window.loadHandshakeHistory = async function() {
                 <td class="p-3 text-center border-l border-slate-100 dark:border-slate-800 bg-amber-50/20 dark:bg-amber-900/5 font-black text-amber-700 dark:text-amber-400 text-base">${log.replace_vj || 0}</td>
                 <td class="p-3 text-center bg-amber-50/20 dark:bg-amber-900/5 font-bold text-amber-500 dark:text-amber-400 text-sm">${log.replace_nvj || 0}</td>
                 <td class="p-3 text-center border-l border-slate-100 dark:border-slate-800">${reconStr}</td>
+                <td class="p-3 text-center border-l border-slate-100 dark:border-slate-800">${crewBtn}</td>
             </tr>`;
         });
         

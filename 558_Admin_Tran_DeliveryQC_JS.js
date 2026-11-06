@@ -411,6 +411,22 @@ window.executeTransferToSales = async function () {
             throw new Error("TRANSFER BLOCKED: The Godown has not completed physical inward for today's active trip.");
         }
 
+        // --- NEW: 2.5 SHIFT LOG HANDSHAKE VALIDATION ---
+        if (activeLog) {
+            const { data: activeShifts } = await window.supabase1.from('shift_log')
+                .select('mail_id, status, clock_out')
+                .eq('trip_id', activeLog.id);
+
+            if (activeShifts && activeShifts.length > 0) {
+                let openShifts = activeShifts.filter(s => s.status !== 'Completed' || !s.clock_out);
+                if (openShifts.length > 0) {
+                    let unclosedStaff = openShifts.map(s => s.mail_id.toUpperCase()).join(', ');
+                    throw new Error("TRANSFER BLOCKED: The following staff have not completed their Delivery EOD Handshake PIN process: " + unclosedStaff);
+                }
+            }
+        }
+        // ------------------------------------------------
+
         // 3. LIVE COLLISION CHECK
         const { data: ordData } = await window.supabase1.from('orders').select('cpn_no');
         var currentOrders = ordData ? ordData.map(o => o.cpn_no.toUpperCase()) : [];
