@@ -241,20 +241,87 @@ window.removeCrewMember = async function(shiftId, tripId, driverName) {
     }
 };
 
-window.openInwardModal = function(logId, driverName) {
+window.openInwardModal = async function(logId, driverName) {
     document.getElementById('hs-modal-log-id').value = logId;
     document.getElementById('hs-modal-driver-name').innerText = driverName;
     
+    // 1. Reset user inputs
     var inputs = ['fvj', 'fnvj', 'evj', 'envj', 'rvj', 'rnvj'];
     inputs.forEach(function(id) {
         var el = document.getElementById('hs-inp-' + id);
         if(el) el.value = "0";
     });
 
+    // 2. Set "Loading" state for the Math boxes
+    ['load-vj', 'del-vj', 'exp-vj', 'load-nvj', 'del-nvj', 'exp-nvj', 'exp-evj', 'exp-envj', 'exp-rvj', 'exp-rnvj'].forEach(id => {
+        var el = document.getElementById('hs-sys-' + id);
+        if (el) el.innerText = "...";
+    });
+
     var modal = document.getElementById('hs-inward-modal');
     if (modal && modal.parentNode !== document.body) document.body.appendChild(modal);
     modal.classList.remove('hidden');
     if(typeof window.toggleScrollLock === 'function') window.toggleScrollLock(true);
+
+    try {
+        // 3. Fetch Morning Dispatch Load
+        const { data: dispatchData } = await window.supabase1.from('van_dispatch_log')
+            .select('load_full_vj, load_full_nvj')
+            .eq('trip_id', logId)
+            .maybeSingle();
+
+        let loadVj = dispatchData ? (dispatchData.load_full_vj || 0) : 0;
+        let loadNvj = dispatchData ? (dispatchData.load_full_nvj || 0) : 0;
+
+        // 4. Fetch Actuals from Deliveries
+        const { data: delData } = await window.supabase1.from('deliveries')
+            .select('act_d_vj, act_d_nvj, act_e_vj, act_e_nvj, replace_act_vj, replace_act_nvj')
+            .eq('trip_id', logId);
+
+        let delVj = 0, delNvj = 0, collEvj = 0, collEnvj = 0, repVj = 0, repNvj = 0;
+        
+        if (delData) {
+            delData.forEach(d => {
+                delVj += (d.act_d_vj || 0);
+                delNvj += (d.act_d_nvj || 0);
+                collEvj += (d.act_e_vj || 0);
+                collEnvj += (d.act_e_nvj || 0);
+                repVj += (d.replace_act_vj || 0);
+                repNvj += (d.replace_act_nvj || 0);
+            });
+        }
+
+        // 5. Calculate Expected Returns
+        // Replacements consume a fresh loaded can, so they are added to total delivered
+        let totalDelVj = delVj + repVj; 
+        let totalDelNvj = delNvj + repNvj;
+        
+        let expReturnVj = Math.max(0, loadVj - totalDelVj);
+        let expReturnNvj = Math.max(0, loadNvj - totalDelNvj);
+
+        // 6. Inject into UI
+        document.getElementById('hs-sys-load-vj').innerText = loadVj;
+        document.getElementById('hs-sys-del-vj').innerText = totalDelVj;
+        document.getElementById('hs-sys-exp-vj').innerText = expReturnVj;
+
+        document.getElementById('hs-sys-load-nvj').innerText = loadNvj;
+        document.getElementById('hs-sys-del-nvj').innerText = totalDelNvj;
+        document.getElementById('hs-sys-exp-nvj').innerText = expReturnNvj;
+
+        document.getElementById('hs-sys-exp-evj').innerText = collEvj;
+        document.getElementById('hs-sys-exp-envj').innerText = collEnvj;
+
+        document.getElementById('hs-sys-exp-rvj').innerText = repVj;
+        document.getElementById('hs-sys-exp-rnvj').innerText = repNvj;
+
+    } catch (err) {
+        console.error("Failed to load expected counts:", err);
+        // Fallback to N/A if query fails
+        ['load-vj', 'del-vj', 'exp-vj', 'load-nvj', 'del-nvj', 'exp-nvj', 'exp-evj', 'exp-envj', 'exp-rvj', 'exp-rnvj'].forEach(id => {
+            var el = document.getElementById('hs-sys-' + id);
+            if (el) el.innerText = "N/A";
+        });
+    }
 };
 
 window.submitPhysicalInward = async function() {
@@ -300,22 +367,23 @@ window.submitPhysicalInward = async function() {
 window.loadHandshakeHistory = async function() {
     window.startHsTimer('Fetching History');
     var tbody = document.getElementById('hs-history-tbody');
-    var dateFilter = document.getElementById('hs-flt-date').value;
+    var dateFrom = document.getElementById('hs-flt-date-from').value;
+    var dateTo = document.getElementById('hs-flt-date-to').value;
     
-    if(tbody) tbody.innerHTML = '<tr><td colspan="9" class="text-center py-12"><svg class="w-6 h-6 animate-spin text-slate-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></td></tr>';
+    if(tbody) tbody.innerHTML = '<tr><td colspan="11" class="text-center py-12"><svg class="w-6 h-6 animate-spin text-slate-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></td></tr>';
 
     try {
         let query = window.supabase1.from('eod_log').select('*').eq('status', 'Completed').order('created_at', { ascending: false }).limit(100);
         
-        if (dateFilter) {
-            query = query.gte('created_at', dateFilter + "T00:00:00").lte('created_at', dateFilter + "T23:59:59");
+        if (dateFrom && dateTo) {
+            query = query.gte('created_at', dateFrom + "T00:00:00").lte('created_at', dateTo + "T23:59:59");
         }
 
         const { data, error } = await query;
         if (error) throw error;
 
         if (!data || data.length === 0) {
-            if(tbody) tbody.innerHTML = '<tr><td colspan="10" class="text-center py-12 text-slate-400 font-bold uppercase tracking-widest text-xs">No records found.</td></tr>';
+            if(tbody) tbody.innerHTML = '<tr><td colspan="11" class="text-center py-12 text-slate-400 font-bold uppercase tracking-widest text-xs">No records found.</td></tr>';
             window.stopHsTimer('Updated', false);
             return;
         }
@@ -325,17 +393,17 @@ window.loadHandshakeHistory = async function() {
             var reconStr = '';
             var rs = String(log.recon_status || 'PENDING').toUpperCase();
             
-            // FIXED STATUS MATCHING
             if(rs === 'COMPLETED') reconStr = '<span class="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-widest shadow-sm">Matched</span>';
             else if(rs === 'COMPLETED (SHORTAGE)') reconStr = '<span class="bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-widest shadow-sm cursor-pointer" title="' + (log.godown_variance_reason || 'Variance found') + '">Shortage ⚠️</span>';
             else reconStr = '<span class="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800 text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-widest shadow-sm">Pending QC</span>';
 
-            // ADDED CREW BUTTON FOR HISTORY ROWS
-            var crewBtn = `<button onclick="window.openCrewModal(${log.id}, '${log.driver_mail_id}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg shadow-sm text-[9px] font-black uppercase tracking-widest transition-colors dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40 dark:text-indigo-400 dark:border-indigo-800 outline-none">Crew</button>`;
+            var crewBtn = `<button onclick="window.openCrewModal(${log.id}, '${log.driver_mail_id}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2 py-1.5 rounded shadow-sm text-[9px] font-black uppercase tracking-widest transition-colors dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40 dark:text-indigo-400 dark:border-indigo-800 outline-none">Crew</button>`;
+            var reviewBtn = `<button onclick="window.openDetailsModal(${log.id}, '${log.driver_mail_id}')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-1.5 rounded shadow-sm text-[9px] font-black uppercase tracking-widest transition-colors dark:bg-blue-900/20 dark:hover:bg-blue-900/40 dark:text-blue-400 dark:border-blue-800 outline-none">Review</button>`;
 
             html += `
             <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors border-b border-slate-100 dark:border-slate-800/60">
                 <td class="p-3 pl-4 text-slate-600 dark:text-slate-300 font-bold text-[10px] uppercase tracking-wider">${window.formatDisplayDate(log.created_at)}</td>
+                <td class="p-3 font-black text-slate-700 dark:text-slate-300 text-xs">#${log.id}</td>
                 <td class="p-3">
                     <span class="font-black text-indigo-700 dark:text-indigo-400 uppercase text-xs block">${log.driver_mail_id}</span>
                     <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">By: ${log.manager_mail_id || 'Admin'}</span>
@@ -347,7 +415,7 @@ window.loadHandshakeHistory = async function() {
                 <td class="p-3 text-center border-l border-slate-100 dark:border-slate-800 bg-amber-50/20 dark:bg-amber-900/5 font-black text-amber-700 dark:text-amber-400 text-base">${log.replace_vj || 0}</td>
                 <td class="p-3 text-center bg-amber-50/20 dark:bg-amber-900/5 font-bold text-amber-500 dark:text-amber-400 text-sm">${log.replace_nvj || 0}</td>
                 <td class="p-3 text-center border-l border-slate-100 dark:border-slate-800">${reconStr}</td>
-                <td class="p-3 text-center border-l border-slate-100 dark:border-slate-800">${crewBtn}</td>
+                <td class="p-3 text-center border-l border-slate-100 dark:border-slate-800 flex justify-center gap-1">${crewBtn} ${reviewBtn}</td>
             </tr>`;
         });
         
@@ -360,11 +428,127 @@ window.loadHandshakeHistory = async function() {
     }
 };
 
-window.tabActions['handshake-log'] = function() {
-    var dateInput = document.getElementById('hs-flt-date');
-    if(dateInput && !dateInput.value) {
-        dateInput.value = new Date().toISOString().split('T')[0];
+window.openDetailsModal = async function(tripId, driverName) {
+    document.getElementById('hs-det-trip-id').innerText = tripId;
+    document.getElementById('hs-det-driver').innerText = driverName;
+    document.getElementById('hs-det-loader').classList.remove('hidden');
+    document.getElementById('hs-det-content').classList.add('hidden');
+
+    var modal = document.getElementById('hs-details-modal');
+    if (modal && modal.parentNode !== document.body) document.body.appendChild(modal);
+    modal.classList.remove('hidden');
+    if(typeof window.toggleScrollLock === 'function') window.toggleScrollLock(true);
+
+    try {
+        // 1. Fetch EOD Log (Godown Received)
+        const { data: eodData, error: eodErr } = await window.supabase1.from('eod_log').select('*').eq('id', tripId).single();
+        if (eodErr) throw eodErr;
+
+        // 2. Fetch Dispatch Log (Morning Load)
+        const { data: dispatchData } = await window.supabase1.from('van_dispatch_log').select('load_full_vj, load_full_nvj').eq('trip_id', tripId).maybeSingle();
+        let loadVj = dispatchData ? (dispatchData.load_full_vj || 0) : 0;
+        let loadNvj = dispatchData ? (dispatchData.load_full_nvj || 0) : 0;
+
+        // 3. Fetch App Actuals (Sum of Deliveries + Sales)
+        const { data: delData } = await window.supabase1.from('deliveries').select('act_d_vj, act_d_nvj, act_e_vj, act_e_nvj, replace_act_vj, replace_act_nvj').eq('trip_id', tripId);
+        const { data: salesData } = await window.supabase1.from('sales').select('act_d_vj, act_d_nvj, act_e_vj, act_e_nvj, replace_act_vj, replace_act_nvj').eq('trip_id', tripId);
+
+        let appDelVj = 0, appDelNvj = 0, appEvj = 0, appEnvj = 0, appRvj = 0, appRnvj = 0;
+        
+        let allRecords = (delData || []).concat(salesData || []);
+        allRecords.forEach(d => {
+            appDelVj += (d.act_d_vj || 0);
+            appDelNvj += (d.act_d_nvj || 0);
+            appEvj += (d.act_e_vj || 0);
+            appEnvj += (d.act_e_nvj || 0);
+            appRvj += (d.replace_act_vj || 0);
+            appRnvj += (d.replace_act_nvj || 0);
+        });
+
+        // 4. Calculate Expected
+        let expReturnVj = Math.max(0, loadVj - (appDelVj + appRvj));
+        let expReturnNvj = Math.max(0, loadNvj - (appDelNvj + appRnvj));
+
+        // 5. Variances (Godown Received - Expected)
+        let vFvj = (eodData.full_vj || 0) - expReturnVj;
+        let vFnvj = (eodData.full_nvj || 0) - expReturnNvj;
+        let vEvj = (eodData.empty_vj || 0) - appEvj;
+        let vEnvj = (eodData.empty_nvj || 0) - appEnvj;
+        let vRvj = (eodData.replace_vj || 0) - appRvj;
+        let vRnvj = (eodData.replace_nvj || 0) - appRnvj;
+
+        // 6. Populate UI
+        document.getElementById('hd-load-vj').innerText = loadVj;
+        document.getElementById('hd-del-vj').innerText = appDelVj + appRvj;
+        document.getElementById('hd-exp-vj').innerText = expReturnVj;
+        document.getElementById('hd-act-vj').innerText = eodData.full_vj || 0;
+        
+        document.getElementById('hd-load-nvj').innerText = loadNvj;
+        document.getElementById('hd-del-nvj').innerText = appDelNvj + appRnvj;
+        document.getElementById('hd-exp-nvj').innerText = expReturnNvj;
+        document.getElementById('hd-act-nvj').innerText = eodData.full_nvj || 0;
+
+        document.getElementById('hd-exp-evj').innerText = appEvj;
+        document.getElementById('hd-act-evj').innerText = eodData.empty_vj || 0;
+        document.getElementById('hd-exp-envj').innerText = appEnvj;
+        document.getElementById('hd-act-envj').innerText = eodData.empty_nvj || 0;
+
+        document.getElementById('hd-exp-rvj').innerText = appRvj;
+        document.getElementById('hd-act-rvj').innerText = eodData.replace_vj || 0;
+        document.getElementById('hd-exp-rnvj').innerText = appRnvj;
+        document.getElementById('hd-act-rnvj').innerText = eodData.replace_nvj || 0;
+
+        // Helper to format variance rows
+        function setVarRow(val, rowId, valId) {
+            let el = document.getElementById(valId);
+            let row = document.getElementById(rowId);
+            el.innerText = (val > 0 ? "+" : "") + val;
+            if (val !== 0) {
+                row.className = "flex justify-between font-black mt-1 p-1 rounded bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400";
+            } else {
+                row.className = "flex justify-between font-black mt-1 p-1 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
+            }
+        }
+
+        setVarRow(vFvj, 'hd-var-vj-row', 'hd-var-vj');
+        setVarRow(vFnvj, 'hd-var-nvj-row', 'hd-var-nvj');
+        setVarRow(vEvj, 'hd-var-evj-row', 'hd-var-evj');
+        setVarRow(vEnvj, 'hd-var-envj-row', 'hd-var-envj');
+        setVarRow(vRvj, 'hd-var-rvj-row', 'hd-var-rvj');
+        setVarRow(vRnvj, 'hd-var-rnvj-row', 'hd-var-rnvj');
+
+        // Status Banner
+        let banner = document.getElementById('hs-det-status-banner');
+        if (vFvj === 0 && vFnvj === 0 && vEvj === 0 && vEnvj === 0 && vRvj === 0 && vRnvj === 0) {
+            banner.className = "p-3 rounded-xl border text-center font-black uppercase tracking-widest text-sm shadow-sm bg-emerald-100 border-emerald-300 text-emerald-800 dark:bg-emerald-900/40 dark:border-emerald-800 dark:text-emerald-300";
+            banner.innerText = "✅ Perfectly Matched";
+        } else {
+            banner.className = "p-3 rounded-xl border text-center font-black uppercase tracking-widest text-sm shadow-sm bg-rose-100 border-rose-300 text-rose-800 dark:bg-rose-900/40 dark:border-rose-800 dark:text-rose-300";
+            banner.innerText = "⚠️ Shortage / Variance Detected";
+        }
+
+        document.getElementById('hs-det-loader').classList.add('hidden');
+        document.getElementById('hs-det-content').classList.remove('hidden');
+
+    } catch (err) {
+        if(window.showToast) window.showToast("Failed to load details: " + err.message, "error");
+        window.closeDetailsModal();
     }
+};
+
+window.closeDetailsModal = function() {
+    var modal = document.getElementById('hs-details-modal');
+    if (modal) modal.classList.add('hidden');
+    if(typeof window.toggleScrollLock === 'function') window.toggleScrollLock(false);
+};
+
+window.tabActions['handshake-log'] = function() {
+    var dateFrom = document.getElementById('hs-flt-date-from');
+    var dateTo = document.getElementById('hs-flt-date-to');
+    var today = new Date().toISOString().split('T')[0];
+    if(dateFrom && !dateFrom.value) dateFrom.value = today;
+    if(dateTo && !dateTo.value) dateTo.value = today;
+    
     window.switchHsTab('queue');
     window.loadHandshakeQueue();
 };
