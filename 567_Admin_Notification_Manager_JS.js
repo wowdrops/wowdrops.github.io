@@ -328,7 +328,7 @@ async function processDispatch(mode) {
 
     try {
         const adminUser = window.activeAdminSession ? window.activeAdminSession.username : 'Unknown Admin';
-        const targetUrl = window.pushUrlMap[context] || "https://wowdrops.github.io/550_admin_app.html";
+        const targetUrl = window.pushUrlMap[context] || "https://wowdrops.github.io/550_Admin_App.html";
 
         const insertData = Array.from(selectedCpns).map(cpn => {
             const rowData = currentGridData.find(r => r.cpn_no === cpn) || {};
