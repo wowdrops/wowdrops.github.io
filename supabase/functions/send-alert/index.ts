@@ -94,7 +94,8 @@ serve(async (req) => {
       let isCustomer = true;
 
       // NEW: Branch logic for Admin vs Customer
-      if (message_type === 'ADMIN_ALERT') {
+      const staffTypes = ['ADMIN_ALERT', 'ADMIN_USERS', 'DELIVERY_USERS', 'STAFF'];
+      if (staffTypes.includes(message_type)) {
           isCustomer = false;
           // Look up users table for admin details
           const { data: adminUser } = await supabase.from('users').select('phone, mail_id').eq('username', cpn_no).single()
