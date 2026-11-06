@@ -10,32 +10,67 @@ window.loadNotificationManager = async function() {
     selectedCpns.clear();
     updateSelectionUI();
     
+    // Set Default Filters: Last 2 Days & FAILED
+    const today = new Date();
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(today.getDate() - 2);
+    
+    document.getElementById('filter-to-date').value = today.toISOString().split('T')[0];
+    document.getElementById('filter-from-date').value = twoDaysAgo.toISOString().split('T')[0];
+    document.getElementById('filter-status').value = 'FAILED';
+
     // Bind Event Listeners
-    document.getElementById('notif-context-select').addEventListener('change', loadGridData);
+    document.getElementById('notif-context-select').addEventListener('change', handleContextChange);
     document.getElementById('notif-grid-search').addEventListener('input', renderGrid);
     document.getElementById('notif-select-all').addEventListener('change', toggleAllSelection);
+    document.getElementById('channel-wa').addEventListener('change', handleWaChannelChange);
+
+    handleWaChannelChange(); // Init Template State
 
     await Promise.all([
         loadNotificationConfigs(),
-        loadGridData(),
-        fetchNotificationLogs() // This also calculates KPIs
+        handleContextChange(), // This triggers loadGridData
+        fetchNotificationLogs() 
     ]);
+};
+
+window.handleContextChange = async function() {
+    const context = document.getElementById('notif-context-select').value;
+    const searchBox = document.getElementById('notif-grid-search');
+    
+    if (context === 'ADMIN_USERS' || context === 'DELIVERY_USERS') {
+        searchBox.placeholder = "Search Username or Email...";
+    } else {
+        searchBox.placeholder = "Search CPN, Name or Contact...";
+    }
+    await loadGridData();
+};
+
+window.handleWaChannelChange = function() {
+    const waCheckbox = document.getElementById('channel-wa');
+    const templateSelect = document.getElementById('notif-wa-template');
+    
+    if (waCheckbox.checked) {
+        templateSelect.disabled = false;
+        templateSelect.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-100', 'dark:bg-slate-800');
+        templateSelect.classList.add('bg-white', 'dark:bg-slate-900');
+    } else {
+        templateSelect.disabled = true;
+        templateSelect.value = "";
+        templateSelect.classList.add('opacity-50', 'cursor-not-allowed', 'bg-slate-100', 'dark:bg-slate-800');
+        templateSelect.classList.remove('bg-white', 'dark:bg-slate-900');
+        window.handleTemplateSelection(); // Reset to compose mode
+    }
 };
 
 async function loadNotificationConfigs() {
     const templateSelect = document.getElementById('notif-wa-template');
     if (!templateSelect) return;
     try {
-        // Fetch only the relevant keys
-        const { data, error } = await window.supabase1.from('setup').select('key, value').in('key', [
-            'WA_TEMPLATES', 
-            'PUSH_URL_ROUTING'
-        ]);
-
+        const { data, error } = await window.supabase1.from('setup').select('key, value').in('key', ['WA_TEMPLATES', 'PUSH_URL_ROUTING']);
         if (error) throw error;
         
         let optionsHTML = '<option value="">-- No Template (Manual Compose) --</option>';
-        
         if (data) {
             data.forEach(row => {
                 if (row.key === 'WA_TEMPLATES') {
@@ -84,28 +119,68 @@ async function loadGridData() {
             ({ data, error } = await window.supabase1.from('v_customer_outstanding').select('*'));
             currentGridData = data ? data.map(d => ({ ...d, name: d.customer_name, contact: d.contact, metric: `₹${d.current_balance}`, isInvalid: !d.contact || String(d.contact).length < 10 })) : [];
         }
+        else if (context === 'ADMIN_USERS' || context === 'DELIVERY_USERS') {
+            metricHeader.textContent = "Role";
+            // Fetch all users to bypass PostgreSQL strict space/case matching
+            ({ data, error } = await window.supabase1.from('users').select('*'));
+            
+            let filteredUsers = [];
+            if (data) {
+                filteredUsers = data.filter(u => {
+                    // 1. Safely check Active Status (ignores spaces and case)
+                    let currentStatus = String(u.status || '').trim().toUpperCase();
+                    if (currentStatus !== 'ACTIVE') return false;
+
+                    // 2. Ensure roles column exists
+                    if (!u.app_roles) return false;
+                    
+                    // 3. Safely parse the JSON
+                    let roles = {};
+                    try {
+                        roles = typeof u.app_roles === 'string' ? JSON.parse(u.app_roles) : u.app_roles;
+                    } catch (e) {
+                        return false; // Skip row if JSON is broken
+                    }
+
+                    if (!roles) return false;
+                    
+                    // 4. Check if the array actually contains assigned roles
+                    if (context === 'ADMIN_USERS') {
+                        return roles.ADMIN && Array.isArray(roles.ADMIN) && roles.ADMIN.length > 0;
+                    }
+                    if (context === 'DELIVERY_USERS') {
+                        return roles.DELIVERY && Array.isArray(roles.DELIVERY) && roles.DELIVERY.length > 0;
+                    }
+                    return false;
+                });
+            }
+            
+            currentGridData = filteredUsers.map(d => ({ 
+                cpn_no: d.username, 
+                name: d.username, 
+                contact: d.mail_id, 
+                metric: context === 'ADMIN_USERS' ? 'Admin' : 'Delivery', 
+                isInvalid: !d.mail_id 
+            }));
+        }
 
         if (error) throw error;
         renderGrid();
     } catch (err) {
         console.error("Grid Load Error:", err);
-        tbody.innerHTML = `<tr><td colspan="5" class="p-5 text-center text-rose-400 font-bold">Failed to load context data: ${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="p-5 text-center text-rose-500 font-bold">Failed to load context data: ${err.message}</td></tr>`;
     }
 }
 
 // ------------------------------------------------------------------
-// 2. UI INTERACTIONS (Selection, Merge Tags, Previews)
+// 2. UI INTERACTIONS
 // ------------------------------------------------------------------
 window.insertMergeTag = function(tag) {
     const textarea = document.getElementById('notif-body');
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const text = textarea.value;
-    
-    // Insert tag at cursor position
     textarea.value = text.substring(0, start) + tag + text.substring(end);
-    
-    // Move cursor to immediately after the inserted tag
     textarea.selectionStart = textarea.selectionEnd = start + tag.length;
     textarea.focus();
 };
@@ -120,19 +195,11 @@ window.handleTemplateSelection = function() {
         composeSec.classList.add('hidden');
         previewSec.classList.remove('hidden');
         
-        // Exact Meta Template Previews
-        let text = "";
-        if (template === 'order_confirmation') {
-            text = "Hi {{1}}, your WowDrops order {{2}} has been confirmed for {{3}} can(s).\n\n{{4}} is the scheduled delivery date.";
-        } else if (template === 'delivery_confirmation') {
-            text = "Hi {{1}}, your WowDrops delivery is complete.\n\nDelivered: {{2}} full can(s)\nCollected: {{3}} empty can(s)\nCurrent outstanding balance: ₹{{4}} only.";
-        } else if (template === 'payment_confirmation') {
-            text = "Hi {{1}}, we have received your payment of ₹{{2}} via {{3}}.\n\nYour updated outstanding balance is ₹{{4}}.\n\nThank you for choosing WowDrops.";
-        } else if (template === 'payment_reminder') {
-            text = "Payment reminder:\n\nName: {{1}}\nCPN: {{2}}\nAmount due: ₹{{3}}\n\nPay now to avoid {{4}}.\n\nPlease ignore this if you have already paid.";
-        } else {
-            text = "Template preview not available.";
-        }
+        let text = "Template preview not available.";
+        if (template === 'order_confirmation') text = "Hi {{1}}, your WowDrops order {{2}} has been confirmed for {{3}} can(s).\n\n{{4}} is the scheduled delivery date.";
+        else if (template === 'delivery_confirmation') text = "Hi {{1}}, your WowDrops delivery is complete.\n\nDelivered: {{2}} full can(s)\nCollected: {{3}} empty can(s)\nCurrent outstanding balance: ₹{{4}} only.";
+        else if (template === 'payment_confirmation') text = "Hi {{1}}, we have received your payment of ₹{{2}} via {{3}}.\n\nYour updated outstanding balance is ₹{{4}}.\n\nThank you for choosing WowDrops.";
+        else if (template === 'payment_reminder') text = "Payment reminder:\n\nName: {{1}}\nCPN: {{2}}\nAmount due: ₹{{3}}\n\nPay now to avoid {{4}}.\n\nPlease ignore this if you have already paid.";
         
         previewText.innerText = text;
     } else {
@@ -181,7 +248,8 @@ function renderGrid() {
     
     const filtered = currentGridData.filter(row => 
         row.cpn_no?.toLowerCase().includes(searchTerm) || 
-        row.name?.toLowerCase().includes(searchTerm)
+        row.name?.toLowerCase().includes(searchTerm) ||
+        row.contact?.toLowerCase().includes(searchTerm)
     );
 
     if (filtered.length === 0) {
@@ -191,25 +259,25 @@ function renderGrid() {
 
     tbody.innerHTML = filtered.map(row => {
         const isSelected = selectedCpns.has(row.cpn_no);
-        const rowClass = row.isInvalid ? 'bg-rose-900/10 border-rose-900/30' : 'hover:bg-slate-800/50';
-        const textClass = row.isInvalid ? 'text-rose-400' : 'text-slate-300';
+        const rowClass = row.isInvalid ? 'bg-rose-50 dark:bg-rose-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50';
+        const textClass = row.isInvalid ? 'text-rose-500 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300';
         const warningIcon = row.isInvalid ? '<i class="fas fa-exclamation-triangle text-rose-500 mr-1" title="Invalid Contact"></i>' : '';
 
         return `
-        <tr class="border-b border-slate-700/50 transition-colors ${rowClass}">
+        <tr class="border-b border-slate-200 dark:border-slate-700/50 transition-colors ${rowClass}">
             <td class="p-2 text-center">
                 <input type="checkbox" value="${row.cpn_no}" onchange="toggleRowSelection(this)" ${isSelected ? 'checked' : ''} ${row.isInvalid ? 'disabled' : ''} class="accent-emerald-500 w-4 h-4 rounded cursor-pointer">
             </td>
             <td class="p-2 font-bold ${textClass}">${warningIcon}${row.cpn_no}</td>
             <td class="p-2">
                 <p class="font-bold ${textClass} truncate max-w-[150px]">${row.name || 'Unknown'}</p>
-                <p class="text-[9px] font-mono text-slate-500">${row.contact || 'No Number'}</p>
+                <p class="text-[9px] font-mono text-slate-500">${row.contact || 'No Contact Info'}</p>
             </td>
-            <td class="p-2 text-right font-mono text-slate-400">${row.metric}</td>
+            <td class="p-2 text-right font-mono font-bold text-slate-500 dark:text-slate-400">${row.metric}</td>
             <td class="p-2 text-center">
                 ${row.isInvalid 
-                    ? '<span class="px-1.5 py-0.5 rounded bg-rose-900/30 text-rose-400 text-[9px] font-black uppercase tracking-wider border border-rose-900/50">Invalid</span>' 
-                    : '<span class="px-1.5 py-0.5 rounded bg-emerald-900/20 text-emerald-400 text-[9px] font-black uppercase tracking-wider border border-emerald-900/50">Valid</span>'}
+                    ? '<span class="px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-[9px] font-black uppercase tracking-wider border border-rose-200 dark:border-rose-900/50">Invalid</span>' 
+                    : '<span class="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-[9px] font-black uppercase tracking-wider border border-emerald-200 dark:border-emerald-900/50">Valid</span>'}
             </td>
         </tr>`;
     }).join('');
@@ -245,7 +313,7 @@ async function processDispatch(mode) {
     const { channels, title, body, template, context } = getPayloadData();
 
     if (selectedCpns.size === 0) {
-        showFeedback(feedbackEl, "Select at least one valid customer from the grid.", "error");
+        showFeedback(feedbackEl, "Select at least one valid customer/user from the grid.", "error");
         return;
     }
     if (channels.length === 0) {
@@ -264,9 +332,8 @@ async function processDispatch(mode) {
 
         const insertData = Array.from(selectedCpns).map(cpn => {
             const rowData = currentGridData.find(r => r.cpn_no === cpn) || {};
-            const customerName = rowData.name || 'Customer';
+            const customerName = rowData.name || 'User';
 
-            // Custom Merge Tags for Compose Screen
             let personalizedTitle = title.replace(/\{\{name\}\}/gi, customerName);
             let personalizedBody = body.replace(/\{\{name\}\}/gi, customerName)
                                        .replace(/\{\{Ord D\}\}/gi, rowData.ord_d || 0)
@@ -274,38 +341,12 @@ async function processDispatch(mode) {
                                        .replace(/\{\{Act D\}\}/gi, rowData.act_d || 0)
                                        .replace(/\{\{Act E\}\}/gi, rowData.act_e || 0);
 
-            // Hardcoded Meta Template Variables Mapping
             let wa_variables = [];
             if (template) {
-                if (template === 'order_confirmation') {
-                    wa_variables = [
-                        customerName,
-                        rowData.unique_no || 'N/A',
-                        String(rowData.ord_d || 0),
-                        rowData.order_date || 'N/A'
-                    ];
-                } else if (template === 'delivery_confirmation') {
-                    wa_variables = [
-                        customerName,
-                        String(rowData.act_d || 0),
-                        String(rowData.act_e || 0),
-                        String(rowData.current_balance || 0) 
-                    ];
-                } else if (template === 'payment_confirmation') {
-                    wa_variables = [
-                        customerName,
-                        String(rowData.advance_amount || 0),
-                        "ONLINE",
-                        String(rowData.current_balance || 0)
-                    ];
-                } else if (template === 'payment_reminder') {
-                    wa_variables = [
-                        customerName,
-                        cpn,
-                        String(rowData.current_balance || 0),
-                        "delivery interruption"
-                    ];
-                }
+                if (template === 'order_confirmation') wa_variables = [customerName, rowData.unique_no || 'N/A', String(rowData.ord_d || 0), rowData.order_date || 'N/A'];
+                else if (template === 'delivery_confirmation') wa_variables = [customerName, String(rowData.act_d || 0), String(rowData.act_e || 0), String(rowData.current_balance || 0)];
+                else if (template === 'payment_confirmation') wa_variables = [customerName, String(rowData.advance_amount || 0), "ONLINE", String(rowData.current_balance || 0)];
+                else if (template === 'payment_reminder') wa_variables = [customerName, cpn, String(rowData.current_balance || 0), "delivery interruption"];
             }
 
             return {
@@ -326,18 +367,12 @@ async function processDispatch(mode) {
             };
         });
 
-        const { data: insertedLogs, error: insertErr } = await window.supabase1
-            .from('notification_logs')
-            .insert(insertData)
-            .select('id, cpn_no');
-
+        const { data: insertedLogs, error: insertErr } = await window.supabase1.from('notification_logs').insert(insertData).select('id, cpn_no');
         if (insertErr) throw insertErr;
 
         if (mode === 'IMMEDIATE' && insertedLogs) {
             const promises = insertedLogs.map(log => 
-                window.supabase1.functions.invoke('send-alert', { 
-                    body: { action: 'send_immediate', log_id: log.id } 
-                })
+                window.supabase1.functions.invoke('send-alert', { body: { action: 'send_immediate', log_id: log.id } })
             );
             await Promise.allSettled(promises); 
             showFeedback(feedbackEl, `Successfully dispatched ${selectedCpns.size} alerts!`, "success");
@@ -354,7 +389,6 @@ async function processDispatch(mode) {
         selectedCpns.clear();
         document.getElementById('notif-select-all').checked = false;
         renderGrid(); 
-        
         fetchNotificationLogs(); 
 
     } catch (err) {
@@ -372,12 +406,17 @@ async function fetchNotificationLogs() {
     const filterChannel = document.getElementById('filter-channel').value;
     const filterStatus = document.getElementById('filter-status').value;
     const filterTrigger = document.getElementById('filter-trigger').value;
+    const dateFrom = document.getElementById('filter-from-date').value;
+    const dateTo = document.getElementById('filter-to-date').value;
     
     if(container) container.innerHTML = '<div class="flex flex-col items-center justify-center py-10"><i class="fas fa-spinner fa-spin text-2xl text-emerald-500 mb-3"></i><p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Syncing Live Ledger...</p></div>';
 
     try {
-        let query = window.supabase1.from('notification_logs').select('*').order('created_at', { ascending: false }).limit(50);
+        let query = window.supabase1.from('notification_logs').select('*').order('created_at', { ascending: false }).limit(100);
         
+        if (dateFrom && dateTo) {
+            query = query.gte('created_at', dateFrom + "T00:00:00").lte('created_at', dateTo + "T23:59:59");
+        }
         if(filterChannel !== 'ALL') query = query.contains('target_channels', `["${filterChannel}"]`); 
         if(filterStatus !== 'ALL') query = query.eq('status', filterStatus);
         if(filterTrigger !== 'ALL') query = query.eq('trigger_type', filterTrigger);
@@ -388,30 +427,31 @@ async function fetchNotificationLogs() {
         calculateKPIs(); 
 
         if (!data || data.length === 0) {
-            if(container) container.innerHTML = '<p class="text-[10px] font-bold text-slate-500 text-center bg-slate-900 rounded-xl p-6 border border-slate-700 uppercase tracking-widest mt-4">No dispatches match criteria.</p>';
+            if(container) container.innerHTML = '<p class="text-[10px] font-bold text-slate-500 text-center bg-slate-50 dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-700 uppercase tracking-widest mt-4">No dispatches match criteria.</p>';
             return;
         }
 
         if(container) {
             container.innerHTML = data.map(log => {
                 let isSuccess = log.status === 'SUCCESS';
+                let isPartial = log.status === 'PARTIAL_SUCCESS';
                 let isPending = log.status === 'PENDING' || log.status === 'PROCESSING';
                 
-                let statusColor = isSuccess ? 'text-emerald-400' : (isPending ? 'text-amber-400' : 'text-rose-400');
-                let statusBg = isSuccess ? 'bg-emerald-900/20 border-emerald-900/50' : (isPending ? 'bg-amber-900/20 border-amber-900/50' : 'bg-rose-900/20 border-rose-900/50');
-                let statusDot = isSuccess ? 'bg-emerald-400' : (isPending ? 'bg-amber-400 animate-pulse' : 'bg-rose-400');
+                let statusColor = isSuccess ? 'text-emerald-600 dark:text-emerald-400' : (isPartial ? 'text-blue-600 dark:text-blue-400' : (isPending ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'));
+                let statusBg = isSuccess ? 'bg-emerald-100 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-900/50' : (isPartial ? 'bg-blue-100 dark:bg-blue-900/20 border-blue-200 dark:border-blue-900/50' : (isPending ? 'bg-amber-100 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900/50' : 'bg-rose-100 dark:bg-rose-900/20 border-rose-200 dark:border-rose-900/50'));
+                let statusDot = isSuccess ? 'bg-emerald-500' : (isPartial ? 'bg-blue-500' : (isPending ? 'bg-amber-500 animate-pulse' : 'bg-rose-500'));
                 
                 const timestamp = new Date(log.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
                 const errorAttr = log.error_log ? `title="Error: ${log.error_log.replace(/"/g, "'")}"` : '';
 
                 return `
-                <div class="bg-slate-900 border border-slate-700 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between shadow-sm transition-all hover:border-slate-600 gap-2" ${errorAttr}>
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between shadow-sm transition-all hover:shadow-md gap-2" ${errorAttr}>
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center shrink-0 shadow-inner">
-                            <i class="fas ${log.trigger_type === 'AUTO' || log.trigger_type === 'CRON' ? 'fa-robot text-blue-400' : 'fa-user text-slate-400'}"></i>
+                        <div class="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 flex items-center justify-center shrink-0 shadow-inner">
+                            <i class="fas ${log.trigger_type === 'AUTO' || log.trigger_type === 'CRON' ? 'fa-robot text-blue-500' : 'fa-user text-slate-400'}"></i>
                         </div>
                         <div>
-                            <p class="text-sm font-black text-white tracking-wide">${log.cpn_no} <span class="text-[9px] font-bold text-slate-400 ml-1 px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 uppercase tracking-wider">${log.message_type}</span></p>
+                            <p class="text-sm font-black text-slate-800 dark:text-white tracking-wide">${log.cpn_no} <span class="text-[9px] font-bold text-slate-500 ml-1 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 uppercase tracking-wider">${log.message_type}</span></p>
                             <p class="text-[9px] font-bold text-slate-500 mt-0.5 uppercase tracking-wider">${timestamp} • By ${log.created_by || 'System'}</p>
                         </div>
                     </div>
@@ -428,7 +468,7 @@ async function fetchNotificationLogs() {
 
     } catch (err) {
         console.error("Ledger Fetch Error:", err);
-        if(container) container.innerHTML = '<p class="text-[10px] font-black text-rose-400 text-center py-6 bg-rose-900/10 rounded-xl border border-rose-900/30 uppercase tracking-widest">Failed to sync ledger.</p>';
+        if(container) container.innerHTML = '<p class="text-[10px] font-black text-rose-500 text-center py-6 bg-rose-50 dark:bg-rose-900/10 rounded-xl border border-rose-200 dark:border-rose-900/30 uppercase tracking-widest">Failed to sync ledger.</p>';
     }
 }
 
@@ -452,7 +492,7 @@ async function calculateKPIs() {
         todayStats.forEach(log => {
             totalCost += (log.estimated_cost || 0);
             if (log.status === 'PENDING' || log.status === 'PROCESSING') pendingCount++;
-            if (log.status === 'SUCCESS') successCount++;
+            if (log.status === 'SUCCESS' || log.status === 'PARTIAL_SUCCESS') successCount++;
             if (log.status === 'FAILED') failCount++;
         });
 
@@ -474,9 +514,9 @@ async function calculateKPIs() {
 function showFeedback(el, msg, type) {
     el.textContent = msg;
     if (type === 'error') {
-        el.className = "text-[10px] font-black text-center block text-rose-400 mt-3 uppercase tracking-wider bg-rose-900/20 p-2 rounded-lg border border-rose-900/50";
+        el.className = "text-[10px] font-black text-center block text-rose-600 dark:text-rose-400 mt-3 uppercase tracking-wider bg-rose-100 dark:bg-rose-900/20 p-2 rounded-lg border border-rose-200 dark:border-rose-900/50";
     } else {
-        el.className = "text-[10px] font-black text-center block text-emerald-400 mt-3 uppercase tracking-wider bg-emerald-900/20 p-2 rounded-lg border border-emerald-900/50";
+        el.className = "text-[10px] font-black text-center block text-emerald-700 dark:text-emerald-400 mt-3 uppercase tracking-wider bg-emerald-100 dark:bg-emerald-900/20 p-2 rounded-lg border border-emerald-200 dark:border-emerald-900/50";
     }
     el.classList.remove('hidden');
     setTimeout(() => el.classList.add('hidden'), 5000);
