@@ -18,7 +18,7 @@ window.limitReasonD = "";
 window.limitReasonE = "";
 
 (function () {
-  var APP_VERSION = "4.4"; // Bumped version for new PG rollout
+  var APP_VERSION = "1794076495"; // Bumped version for new PG rollout
   var savedVersion = localStorage.getItem('wowdrops_app_version');
   if (savedVersion !== APP_VERSION) {
     localStorage.setItem('wowdrops_app_version', APP_VERSION);
