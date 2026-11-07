@@ -111,7 +111,7 @@
 
     <!-- SPA STANDARD: Added Local Scrollbox -->
     <div id="qc-blocks-container" class="space-y-6 max-h-[70vh] overflow-y-auto hide-scrollbar mt-4 scroll-smooth"></div>
-    <input type="file" id="admin-qc-upload-input" accept="image/*"
+    <input type="file" id="admin-qc-upload-input" accept="image/*" onchange="window.handleAdminQCUpload(event)"
       class="opacity-0 absolute w-[1px] h-[1px] overflow-hidden -z-50" style="left: -9999px;">
   </div>
 

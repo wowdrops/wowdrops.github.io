@@ -581,72 +581,70 @@ window.compressAdminImage = function (file) {
     });
 };
 
-// --- SPA COMPATIBLE FILE UPLOAD LISTENER ---
-document.addEventListener('change', async function (e) {
-    if (e.target && e.target.id === 'admin-qc-upload-input') {
-        alert("⚠️ Admin Override Upload: Ensure the image is clear and relevant. This action will overwrite existing QC photos.");
+// --- SPA BULLETPROOF FILE UPLOAD FUNCTION ---
+window.handleAdminQCUpload = async function (e) {
+    alert("⚠️ Admin Override Upload: Starting upload process...");
+    
+    if (!e.target.files || e.target.files.length === 0 || !window.activeUploadContext) return;
+    var file = e.target.files[0];
+    var payload = window.activeUploadContext;
+    window.showAdminUploadLoader("Compressing & Watermarking...");
+
+    try {
+        var b64String = await window.compressAdminImage(file);
+
+        document.getElementById('admin-qc-upload-text').innerText = "Uploading to ImgBB...";
         
-        if (!e.target.files || e.target.files.length === 0 || !window.activeUploadContext) return;
-        var file = e.target.files[0];
-        var payload = window.activeUploadContext;
-        window.showAdminUploadLoader("Compressing & Watermarking...");
-
-        try {
-            var b64String = await window.compressAdminImage(file);
-
-            document.getElementById('admin-qc-upload-text').innerText = "Uploading to ImgBB...";
+        // --- NEW: FETCH THE API KEY SECURELY ---
+        const { data: setupData, error: setupErr } = await window.supabase1
+            .from('setup')
+            .select('value')
+            .eq('key', 'IMGBB_API_KEY')
+            .single();
             
-            // --- NEW: FETCH THE API KEY SECURELY ---
-            const { data: setupData, error: setupErr } = await window.supabase1
-                .from('setup')
-                .select('value')
-                .eq('key', 'IMGBB_API_KEY')
-                .single();
-                
-            if (setupErr || !setupData || !setupData.value) {
-                throw new Error("Missing ImgBB API Key in Setup Table.");
-            }
-            
-            let formData = new FormData();
-            formData.append("image", b64String.split(',')[1]);
-
-            // Use the freshly fetched key
-            let res = await fetch("https://api.imgbb.com/1/upload?key=" + setupData.value.trim(), { method: "POST", body: formData });
-            let json = await res.json();
-
-            if (!json.success) throw new Error("ImgBB Upload Failed.");
-            var finalUrl = json.data.url;
-
-            var updatePayload = {};
-            if (payload.type === 'v2b') updatePayload.van_to_block_link = finalUrl;
-            else if (payload.type === 'b2v') updatePayload.block_to_van_link = finalUrl;
-            else updatePayload.door_delivery_link = finalUrl;
-
-            var query = window.supabase1.from('deliveries').update(updatePayload);
-            if (payload.type === 'door') query = query.eq('unique_no', payload.doorUniqueNo);
-            else query = query.eq('apartment', payload.apt).eq('block', payload.blk);
-
-            const { error: dbErr } = await query;
-            if (dbErr) throw dbErr;
-
-            var imgEl = document.getElementById(payload.imgId);
-            imgEl.src = finalUrl;
-            imgEl.setAttribute('onclick', 'window.openLightbox("' + finalUrl + '")');
-
-            if (payload.type === 'door') imgEl.closest('.qc-door-row').setAttribute('data-photo-url', finalUrl);
-            else if (payload.type === 'v2b') window.cachedQCBlocksData[payload.blockId].v2bPhoto = finalUrl;
-            else window.cachedQCBlocksData[payload.blockId].b2vPhoto = finalUrl;
-
-            if (window.showToast) window.showToast("Image override successful.", "success");
-
-        } catch (err) {
-            if (window.showToast) window.showToast("Upload Error: " + err.message, "error");
-        } finally {
-            window.hideAdminUploadLoader();
-            e.target.value = ''; // Reset the input so the same file can be selected again if needed
+        if (setupErr || !setupData || !setupData.value) {
+            throw new Error("Missing ImgBB API Key in Setup Table.");
         }
+        
+        let formData = new FormData();
+        formData.append("image", b64String.split(',')[1]);
+
+        // Use the freshly fetched key
+        let res = await fetch("https://api.imgbb.com/1/upload?key=" + setupData.value.trim(), { method: "POST", body: formData });
+        let json = await res.json();
+
+        if (!json.success) throw new Error("ImgBB Upload Failed.");
+        var finalUrl = json.data.url;
+
+        var updatePayload = {};
+        if (payload.type === 'v2b') updatePayload.van_to_block_link = finalUrl;
+        else if (payload.type === 'b2v') updatePayload.block_to_van_link = finalUrl;
+        else updatePayload.door_delivery_link = finalUrl;
+
+        var query = window.supabase1.from('deliveries').update(updatePayload);
+        if (payload.type === 'door') query = query.eq('unique_no', payload.doorUniqueNo);
+        else query = query.eq('apartment', payload.apt).eq('block', payload.blk);
+
+        const { error: dbErr } = await query;
+        if (dbErr) throw dbErr;
+
+        var imgEl = document.getElementById(payload.imgId);
+        imgEl.src = finalUrl;
+        imgEl.setAttribute('onclick', 'window.openLightbox("' + finalUrl + '")');
+
+        if (payload.type === 'door') imgEl.closest('.qc-door-row').setAttribute('data-photo-url', finalUrl);
+        else if (payload.type === 'v2b') window.cachedQCBlocksData[payload.blockId].v2bPhoto = finalUrl;
+        else window.cachedQCBlocksData[payload.blockId].b2vPhoto = finalUrl;
+
+        if (window.showToast) window.showToast("Image override successful.", "success");
+
+    } catch (err) {
+        if (window.showToast) window.showToast("Upload Error: " + err.message, "error");
+    } finally {
+        window.hideAdminUploadLoader();
+        e.target.value = ''; // Reset the input so you can select the same file again if needed
     }
-});
+};
 
 window.overrideMasterPhoto = function (imgId) {
     var parts = imgId.split('-');
