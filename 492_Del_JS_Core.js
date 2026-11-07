@@ -205,7 +205,7 @@
         localStorage.removeItem('wd_staff_user'); localStorage.removeItem('wd_pending_data'); localStorage.removeItem('wd_all_data');
         document.getElementById('main-header').classList.add('hidden'); window.switchView('view-login');
     };
-
+    /*
     window.factoryResetApp = function () {
         if (confirm("⚠️ WARNING: This will delete any pending offline data, clear your route cache, and log you out. Use this only if the app is stuck.\n\nContinue with Reset?")) {
             localStorage.clear();
@@ -218,6 +218,21 @@
                     txn.oncomplete = function () { window.location.reload(true); };
                 } catch (e) { window.location.reload(true); }
             } else { window.location.reload(true); }
+        }
+    };*/
+
+    window.factoryResetApp = function () {
+        if (confirm("⚠️ WARNING: This will delete any pending offline data, clear your route cache, and log you out. Use this only if the app is stuck.\n\nContinue with Reset?")) {
+            localStorage.clear();
+            if (window.indexedDB) {
+                // FORCE DELETE the entire local database instead of gently clearing it
+                var req = window.indexedDB.deleteDatabase("WOWDROPS_Ops");
+                req.onsuccess = function () { window.location.reload(true); };
+                req.onerror = function () { window.location.reload(true); };
+                req.onblocked = function () { window.location.reload(true); };
+            } else { 
+                window.location.reload(true); 
+            }
         }
     };
 

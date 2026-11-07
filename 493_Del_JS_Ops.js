@@ -727,8 +727,9 @@
                     var recRepVj = isSaved ? (savedItem.repActVj || 0) : (d.replaceActVj || 0);
                     var recRepNvj = isSaved ? (savedItem.repActNvj || 0) : (d.replaceActNvj || 0);
 
-                    var ordCmt = d.ordComment || "";    //added now
-                    var delCmt = d.delComment || "";    //added now
+                    // ULTRA-SAFE STRING CASTING TO PREVENT TYPE-ERRORS
+                    var ordCmt = String(d.ordComment || "").trim();
+                    var delCmt = String(d.delComment || "").trim();
 
                     var card = document.createElement('div');
                     card.className = "bg-white border border-slate-200 rounded-2xl p-4 shadow-sm relative mb-4";
@@ -736,7 +737,14 @@
                     var html = '<div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2"><h4 class="font-black text-xl text-slate-800">' + (i + 1) + '. Door ' + d.door + '</h4><div class="flex gap-1"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-bold tracking-widest border border-slate-200 shadow-sm">' + d.cpnno + '</span><span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-[10px] font-bold tracking-widest border border-indigo-200 shadow-sm">DEP: ₹' + d.advance + '</span></div></div>';
 
                     if (isSaved || doneInDB) {
-                        var photoHtml = (isSaved && savedItem.photoBase64) ? '<div class="mt-3 pt-3 border-t border-emerald-200 flex justify-center"><img src="' + savedItem.photoBase64 + '" onclick="window.openLightbox(\'' + savedItem.photoBase64 + '\')" class="h-32 object-contain rounded-xl shadow-sm border border-emerald-200 bg-white p-1 cursor-pointer hover:scale-105 transition"></div>' : '';
+                        // FIXED PHOTO RENDERING (Shows local if saved, Cloud if Synced)
+                        var photoHtml = '';
+                        if (isSaved && savedItem.photoBase64) {
+                            photoHtml = '<div class="mt-3 pt-3 border-t border-emerald-200 flex justify-center"><img src="' + savedItem.photoBase64 + '" onclick="window.openLightbox(\'' + savedItem.photoBase64 + '\')" class="h-32 object-contain rounded-xl shadow-sm border border-emerald-200 bg-white p-1 cursor-pointer hover:scale-105 transition"></div>';
+                        } else if (doneInDB && d.doorLink) {
+                            var pUrl = window.parseImgUrl(d.doorLink);
+                            photoHtml = '<div class="mt-3 pt-3 border-t border-emerald-200 flex justify-center"><img src="' + pUrl + '" onclick="window.openLightbox(\'' + pUrl + '\')" class="h-32 object-contain rounded-xl shadow-sm border border-emerald-200 bg-white p-1 cursor-pointer hover:scale-105 transition"></div>';
+                        }
 
                         var recDVj = isSaved ? (savedItem.actDVj || 0) : d.actDVj;
                         var recDNvj = isSaved ? (savedItem.actDNvj || 0) : d.actDNvj;
@@ -749,6 +757,7 @@
                             '<div class="flex justify-between"><span>Collected Empties:</span><span class="font-black">' + recEVj + ' VJ | ' + recENvj + ' NVJ</span></div>' +
                             (recCmt ? '<div class="text-[10px] text-emerald-700 border-t border-emerald-200/60 pt-1 mt-1">Note: ' + recCmt + '</div>' : '') +
                             '</div>' + photoHtml;
+                            
                         if (rQty > 0) {
                             html += '<div class="bg-amber-50 text-amber-900 p-3 rounded-xl text-xs font-bold border border-amber-200 shadow-inner mb-3 space-y-1">' +
                                 '<div class="text-amber-800 uppercase mb-1 border-b border-amber-200/60 pb-1">📦 Replacement: ' + rQty + ' requested (' + rReason + ')</div>' +
@@ -756,21 +765,19 @@
                                 '</div>';
                         }
 
-                        // added Now
-                        if(ordCmt && ordCmt.trim() !== "") {
+                        if(ordCmt !== "") {
                             html += '<div class="bg-slate-50 text-slate-900 p-3 rounded-xl text-xs font-bold border border-slate-200 shadow-inner mb-3 space-y-1">' +
                                 '<div class="text-slate-700 uppercase mb-1 border-b border-slate-200/60 pb-1">📝 Order Comment</div>' +
                                 '<div class="text-[10px]">' + ordCmt + '</div>' +
                                 '</div>';
                         }
 
-                        if(delCmt && delCmt.trim() !== "") {
+                        if(delCmt !== "") {
                             html += '<div class="bg-slate-100 text-slate-900 p-3 rounded-xl text-xs font-bold border border-slate-200 shadow-inner mb-3 space-y-1">' +
                                 '<div class="text-slate-700 uppercase mb-1 border-b border-slate-200/60 pb-1">📝 Delivery Comment</div>' +
                                 '<div class="text-[10px]">' + delCmt + '</div>' +
                                 '</div>';
                         }
-                        // added Now - end
 
                         html += '<button onclick="window.editDoor(\'' + d.uniqueNo + '\')" class="w-full bg-white text-slate-600 font-black p-2.5 rounded-xl text-xs border border-slate-200 hover:bg-slate-50 mt-3">Edit Entry</button>';
                     } else {
@@ -786,15 +793,14 @@
                                 '<p class="text-[9px] text-amber-700 font-bold mt-1.5 text-center">Do not collect more than ' + rQty + ' cans total.</p></div>';
                         }
 
-                        // added Now
-                        if(ordCmt && ordCmt.trim() !== "") {
+                        if(ordCmt !== "") {
                             html += '<div class="bg-slate-50 text-slate-700 p-3 rounded-xl text-xs font-bold border border-slate-200 shadow-inner mb-3 space-y-1">' +
                                 '<div class="text-slate-700 uppercase mb-1 border-b border-slate-200/60 pb-1">📝 Order Comment</div>' +
                                 '<div class="text-[10px]">' + ordCmt + '</div>' +
                                 '</div>';
                         }
 
-                        if(delCmt && delCmt.trim() !== "") {
+                        if(delCmt !== "") {
                             html += '<div class="bg-slate-100 text-slate-700 p-3 rounded-xl text-xs font-bold border border-slate-200 shadow-inner mb-3 space-y-1">' +
                                 '<div class="text-slate-700 uppercase mb-1 border-b border-slate-200/60 pb-1">📝 Delivery Comment</div>' +
                                 '<div class="text-[10px]">' + delCmt + '</div>' +
