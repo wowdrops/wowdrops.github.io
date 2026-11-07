@@ -10,23 +10,34 @@
         // --- NEW: CLOUD IMAGE UPLOAD API (ImgBB) ---
         window.uploadImageToCloud = async function(base64Data) {
             if (!base64Data || base64Data.length < 10) return "";
+            
+            // Safety check for API Key
+            const apiKey = window.APP_CONFIG.IMGBB_API_KEY;
+            if (!apiKey) {
+                alert("CRITICAL ERROR: ImgBB API Key is missing. Admin must configure it in the Setup table.");
+                throw new Error("Missing ImgBB API Key");
+            }
+
             try {
-                
-                
                 let b64 = base64Data.split(',')[1] || base64Data;
                 let formData = new FormData();
                 formData.append("image", b64);
                 
-                let res = await fetch("https://api.imgbb.com/1/upload?key=" + IMGBB_API_KEY, {
+                let res = await fetch("https://api.imgbb.com/1/upload?key=" + apiKey, {
                     method: "POST",
                     body: formData
                 });
                 let json = await res.json();
-                if (json.success) return json.data.url;
-                return "";
+                
+                if (json.success) {
+                    return json.data.url;
+                } else {
+                    alert("ImgBB Rejected Photo: " + (json.error ? json.error.message : "Unknown Error"));
+                    throw new Error("ImgBB Upload Failed");
+                }
             } catch (e) {
-                console.error("Image upload failed:", e);
-                return "";
+                console.error("Image upload network failure:", e);
+                throw e; // Throw so syncData aborts!
             }
         };
 
@@ -36,7 +47,13 @@
             var sData = localStorage.getItem('wd_server_summary');
             var cData = localStorage.getItem('wd_sys_config');
             
-            if (cData) { try { window.APP_CONFIG.VJ_PRICE = JSON.parse(cData).vjPrice; } catch (e) { } }
+            if (cData) { 
+                try { 
+                    const cfg = JSON.parse(cData);
+                    window.APP_CONFIG.VJ_PRICE = cfg.vjPrice || 100; 
+                    window.APP_CONFIG.IMGBB_API_KEY = cfg.imgbbKey || null;
+                } catch (e) { } 
+            }
 
             if (lData) {
                 try { window.pendingData = JSON.parse(lData); } catch (e) { window.pendingData = {}; }

@@ -581,11 +581,23 @@
                 return window.showToast("✅ No active route found. You are off duty.", true);
             }
 
-            // --- FIX: FETCH VJ_PRICE FIRST BEFORE ANY CALCULATIONS ---
-            const { data: setupData } = await supa.from('setup').select('value').eq('key', 'VJ_PRICE').maybeSingle();
-            const vjPrice = setupData ? (Number(setupData.value) || window.APP_CONFIG.VJ_PRICE) : window.APP_CONFIG.VJ_PRICE;
+            // --- FIX: FETCH SYSTEM CONFIG VARIABLES ---
+            const { data: setupData } = await supa.from('setup').select('key, value').in('key', ['VJ_PRICE', 'IMGBB_API_KEY']);
+            
+            let vjPrice = window.APP_CONFIG.VJ_PRICE;
+            let imgbbKey = null;
+
+            if (setupData) {
+                const vjRow = setupData.find(r => r.key === 'VJ_PRICE');
+                if (vjRow && vjRow.value) vjPrice = Number(vjRow.value);
+
+                const imgRow = setupData.find(r => r.key === 'IMGBB_API_KEY');
+                if (imgRow && imgRow.value) imgbbKey = String(imgRow.value).trim();
+            }
+
             window.APP_CONFIG.VJ_PRICE = vjPrice;
-            localStorage.setItem('wd_sys_config', JSON.stringify({ vjPrice: vjPrice }));
+            window.APP_CONFIG.IMGBB_API_KEY = imgbbKey; // Store it securely in memory
+            localStorage.setItem('wd_sys_config', JSON.stringify({ vjPrice: vjPrice, imgbbKey: imgbbKey }));
             // ---------------------------------------------------------
 
             // 2. WE HAVE A ROUTE! Now handle the EOD Trip & Shift logic.
@@ -711,7 +723,7 @@
                 var isPending = (!deliveryEnterOn || v2bLink === "" || b2vLink === "");
                 if (isPending) pendingBlocksSet[blockKey] = true;
 
-                var doorDone = !!deliveryEnterOn;
+                var doorDone = !!deliveryEnterOn;//checking point
                 summary.totalDoors++;
 
                 var ordD = Number(row.ord_d || 0);
