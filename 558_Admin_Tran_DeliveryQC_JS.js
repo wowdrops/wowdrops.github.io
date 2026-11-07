@@ -585,6 +585,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var fileInput = document.getElementById('admin-qc-upload-input');
     if (fileInput) {
         fileInput.addEventListener('change', async function (e) {
+            alert("⚠️ Admin Override Upload: Ensure the image is clear and relevant. This action will overwrite existing QC photos.");
             if (!e.target.files || e.target.files.length === 0 || !window.activeUploadContext) return;
             var file = e.target.files[0];
             var payload = window.activeUploadContext;
@@ -594,10 +595,23 @@ document.addEventListener("DOMContentLoaded", function () {
                 var b64String = await window.compressAdminImage(file);
 
                 document.getElementById('admin-qc-upload-text').innerText = "Uploading to ImgBB...";
+                
+                // --- NEW: FETCH THE API KEY SECURELY ---
+                const { data: setupData, error: setupErr } = await window.supabase1
+                    .from('setup')
+                    .select('value')
+                    .eq('key', 'IMGBB_API_KEY')
+                    .single();
+                    
+                if (setupErr || !setupData || !setupData.value) {
+                    throw new Error("Missing ImgBB API Key in Setup Table.");
+                }
+                
                 let formData = new FormData();
                 formData.append("image", b64String.split(',')[1]);
 
-                let res = await fetch("https://api.imgbb.com/1/upload?key=" + window.IMGBB_API_KEY, { method: "POST", body: formData });
+                // Use the freshly fetched key
+                let res = await fetch("https://api.imgbb.com/1/upload?key=" + setupData.value.trim(), { method: "POST", body: formData });
                 let json = await res.json();
 
                 if (!json.success) throw new Error("ImgBB Upload Failed.");
