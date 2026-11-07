@@ -100,54 +100,60 @@
   }
 </script>
 <!-- Master Loader: Fetches ONLY the Core Shell HTML, then boots JS -->
+<!-- Master Loader: Fetches ONLY the Core Shell HTML, then boots JS -->
 <script>
+  // CHANGE THIS NUMBER EVERY TIME YOU DEPLOY NEW CODE TO GITHUB
+  const APP_VERSION = "?v=1794073792"; 
+
   const jsFiles = [
-    "supabase_config.js",
-    "500_Admin_Notifications_JS.js",
-    "551_Admin_Auth_JS.js",
-    "553_Admin_Header_JS.js",
-    "555_Admin_Dashboard_JS.js",
-    "556_Admin_UpdateCan_JS.js",
-    "557_Admin_Tran_Order_JS.js",
-    "558_Admin_Tran_DeliveryQC_JS.js",
-    "559_Admin_Tran_Escalations_JS.js",
-    "560_Admin_Dormant_CRM_JS.js",
-    "561_Admin_Master_Customer_JS.js",
-    "562_Admin_User_Access_JS.js",
-    "563_Admin_Master_Supplier_JS.js",
-    "564_Admin_Tran_Sales_JS.js",
-    "565_Admin_Tran_Pays_JS.js",
-    "566_Admin_360_Modal_JS.js",
-    "567_Admin_Notification_Manager_JS.js",
-    "568_Admin_SysConfig_JS.js",
-    "569_Admin_Handshake_JS.js",
-    "570_Admin_Tran_Inventory_JS.js",
-    "571_Admin_Dash_Inventory_JS.js",
-    "580_1_Admin_DailySalesReports_JS.js",
-    "580_2_Admin_Outstanding_JS.js",
-    "580_3_Admin_Dormant_JS.js",
-    "580_4_Admin_Sales_JS.js",
-    "580_5_Admin_Pays_JS.js",
-    "580_6_Admin_Orders_JS.js",
-    "580_7_Admin_Delivery_JS.js",
-    "580_9_Admin_CRM_Reports_JS.js",
-    "581_0_Admin_Reports_Customer_JS.js",
-    "581_1_Admin_Report_Week_JS.js",
-    "590_Admin_Password_JS.js",
-    "651_CRM_App_JS.js",
-    "701_Accounts_App.js",
-    "702_Accounts_Auth.js",
-    "703_Accounts_Header.js",
-    "704_Accounts_Sidebar.js",
-    "705_Accounts_Maker.js",
-    "706_Accounts_Checker.js",
-    "707_Accounts_Maker_Auto.js"
+    "supabase_config.js" + APP_VERSION,
+    "500_Admin_Notifications_JS.js" + APP_VERSION,
+    "551_Admin_Auth_JS.js" + APP_VERSION,
+    "553_Admin_Header_JS.js" + APP_VERSION,
+    "555_Admin_Dashboard_JS.js" + APP_VERSION,
+    "556_Admin_UpdateCan_JS.js" + APP_VERSION,
+    "557_Admin_Tran_Order_JS.js" + APP_VERSION,
+    "558_Admin_Tran_DeliveryQC_JS.js" + APP_VERSION,
+    "559_Admin_Tran_Escalations_JS.js" + APP_VERSION,
+    "560_Admin_Dormant_CRM_JS.js" + APP_VERSION,
+    "561_Admin_Master_Customer_JS.js" + APP_VERSION,
+    "562_Admin_User_Access_JS.js" + APP_VERSION,
+    "563_Admin_Master_Supplier_JS.js" + APP_VERSION,
+    "564_Admin_Tran_Sales_JS.js" + APP_VERSION,
+    "565_Admin_Tran_Pays_JS.js" + APP_VERSION,
+    "566_Admin_360_Modal_JS.js" + APP_VERSION,
+    "567_Admin_Notification_Manager_JS.js" + APP_VERSION,
+    "568_Admin_SysConfig_JS.js" + APP_VERSION,
+    "569_Admin_Handshake_JS.js" + APP_VERSION,
+    "570_Admin_Tran_Inventory_JS.js" + APP_VERSION,
+    "571_Admin_Dash_Inventory_JS.js" + APP_VERSION,
+    "580_1_Admin_DailySalesReports_JS.js" + APP_VERSION,
+    "580_2_Admin_Outstanding_JS.js" + APP_VERSION,
+    "580_3_Admin_Dormant_JS.js" + APP_VERSION,
+    "580_4_Admin_Sales_JS.js" + APP_VERSION,
+    "580_5_Admin_Pays_JS.js" + APP_VERSION,
+    "580_6_Admin_Orders_JS.js" + APP_VERSION,
+    "580_7_Admin_Delivery_JS.js" + APP_VERSION,
+    "580_9_Admin_CRM_Reports_JS.js" + APP_VERSION,
+    "581_0_Admin_Reports_Customer_JS.js" + APP_VERSION,
+    "581_1_Admin_Report_Week_JS.js" + APP_VERSION,
+    "590_Admin_Password_JS.js" + APP_VERSION,
+    "651_CRM_App_JS.js" + APP_VERSION,
+    "701_Accounts_App.js" + APP_VERSION,
+    "702_Accounts_Auth.js" + APP_VERSION,
+    "703_Accounts_Header.js" + APP_VERSION,
+    "704_Accounts_Sidebar.js" + APP_VERSION,
+    "705_Accounts_Maker.js" + APP_VERSION,
+    "706_Accounts_Checker.js" + APP_VERSION,
+    "707_Accounts_Maker_Auto.js" + APP_VERSION
   ];
 
   async function bootAdminShell() {
     const elements = document.querySelectorAll('[data-include]');
+    
+    // Add the version string to the HTML files so structure updates also bypass cache
     await Promise.all(Array.from(elements).map(async (el) => {
-      const file = el.getAttribute('data-include');
+      const file = el.getAttribute('data-include') + APP_VERSION;
       try {
         const response = await fetch(file);
         if (response.ok) {
