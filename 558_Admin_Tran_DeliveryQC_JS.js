@@ -147,7 +147,7 @@ window.loadDeliveryQCData = async function (filterArg) {
                 repVj: d.replace_act_vj || 0, repNvj: d.replace_act_nvj || 0,
                 aiD: d.act_d_ai || 0, aiE: d.act_e_ai || 0,
                 doorPhoto: d.door_qc_photo || d.door_delivery_link || "",
-                isVerified: d.door_qc === 'true' || d.door_qc === 'TRUE' || d.door_qc === true,
+                isVerified: d.door_qc && (String(d.door_qc).trim().toUpperCase() === 'PASS' || String(d.door_qc).trim().toUpperCase() === 'VERIFIED'),
                 delComment: cmt, rollover: rolloverState, rate: d.rate || d.default_rate || 0
             });
         });
@@ -282,12 +282,19 @@ window.syncQCStateBatch = async function (blockId, blockData, doorsArray) {
         doorsArray.forEach(d => {
             var actD = d.dvj + d.dnvj;
             var actE = d.evj + d.envj;
+            
             promises.push(window.supabase1.from('deliveries').update({
-                door_qc: d.isVerified ? "TRUE" : "FALSE",
-                act_d: actD, act_e: actE, amount: actD * d.rate,
-                act_d_vj: d.dvj, act_d_nvj: d.dnvj, act_e_vj: d.evj, act_e_nvj: d.envj,
-                replace_act_vj: d.repVj, replace_act_nvj: d.repNvj
-            }).eq('unique_no', d.id));
+                door_qc: d.isVerified ? "VERIFIED" : null,
+                act_d: actD, 
+                act_e: actE, 
+                amount: actD * d.rate, // Correctly calculates and fills the amount column
+                act_d_vj: d.dvj, 
+                act_d_nvj: d.dnvj, 
+                act_e_vj: d.evj, 
+                act_e_nvj: d.envj,
+                replace_act_vj: d.repVj, 
+                replace_act_nvj: d.repNvj
+            }).eq('unique_no', d.uniqueNo)); // Safely queries using string unique_no
         });
 
         await Promise.all(promises);
@@ -583,8 +590,6 @@ window.compressAdminImage = function (file) {
 
 // --- SPA BULLETPROOF FILE UPLOAD FUNCTION ---
 window.handleAdminQCUpload = async function (e) {
-    alert("⚠️ Admin Override Upload: Starting upload process...");
-    
     if (!e.target.files || e.target.files.length === 0 || !window.activeUploadContext) return;
     var file = e.target.files[0];
     var payload = window.activeUploadContext;
@@ -592,27 +597,18 @@ window.handleAdminQCUpload = async function (e) {
 
     try {
         var b64String = await window.compressAdminImage(file);
-
         document.getElementById('admin-qc-upload-text').innerText = "Uploading to ImgBB...";
         
-        // --- NEW: FETCH THE API KEY SECURELY ---
         const { data: setupData, error: setupErr } = await window.supabase1
-            .from('setup')
-            .select('value')
-            .eq('key', 'IMGBB_API_KEY')
-            .single();
+            .from('setup').select('value').eq('key', 'IMGBB_API_KEY').single();
             
-        if (setupErr || !setupData || !setupData.value) {
-            throw new Error("Missing ImgBB API Key in Setup Table.");
-        }
+        if (setupErr || !setupData || !setupData.value) throw new Error("Missing ImgBB API Key in Setup Table.");
         
         let formData = new FormData();
         formData.append("image", b64String.split(',')[1]);
 
-        // Use the freshly fetched key
         let res = await fetch("https://api.imgbb.com/1/upload?key=" + setupData.value.trim(), { method: "POST", body: formData });
         let json = await res.json();
-
         if (!json.success) throw new Error("ImgBB Upload Failed.");
         var finalUrl = json.data.url;
 
@@ -621,6 +617,7 @@ window.handleAdminQCUpload = async function (e) {
         else if (payload.type === 'b2v') updatePayload.block_to_van_link = finalUrl;
         else updatePayload.door_delivery_link = finalUrl;
 
+        // BUG FIX 1: Use unique_no string instead of integer ID
         var query = window.supabase1.from('deliveries').update(updatePayload);
         if (payload.type === 'door') query = query.eq('unique_no', payload.doorUniqueNo);
         else query = query.eq('apartment', payload.apt).eq('block', payload.blk);
@@ -642,11 +639,13 @@ window.handleAdminQCUpload = async function (e) {
         if (window.showToast) window.showToast("Upload Error: " + err.message, "error");
     } finally {
         window.hideAdminUploadLoader();
-        e.target.value = ''; // Reset the input so you can select the same file again if needed
+        e.target.value = ''; 
     }
 };
 
 window.overrideMasterPhoto = function (imgId) {
+    if(!confirm("Are you sure you want to overwrite this master block photo?")) return;
+    
     var parts = imgId.split('-');
     if (parts.length < 3) return;
     var type = parts[1];
@@ -658,6 +657,8 @@ window.overrideMasterPhoto = function (imgId) {
 };
 
 window.overrideRowPhoto = function (imgId) {
+    if(!confirm("Are you sure you want to overwrite this customer's delivery photo?")) return;
+    
     var el = document.getElementById(imgId);
     var rowEl = el.closest('.qc-door-row');
     var blockEl = el.closest('.qc-block-group');
@@ -963,17 +964,36 @@ window.toggleDoorQC = function (checkbox, blockId) {
     var rIdx = parseInt(row.getAttribute('data-row-idx'));
     var bData = window.cachedQCBlocksData[blockId];
 
+    // Read the physical HTML values right now
+    var d_vj = parseInt(row.querySelector('.qc-inp-actd-vj').value) || 0;
+    var e_vj = parseInt(row.querySelector('.qc-inp-acte-vj').value) || 0;
+    var d_nvj = parseInt(row.querySelector('.qc-inp-actd-nvj').value) || 0;
+    var e_nvj = parseInt(row.querySelector('.qc-inp-acte-nvj').value) || 0;
+    
+    var elRepVj = row.querySelector('.qc-inp-actrep-vj');
+    var elRepNvj = row.querySelector('.qc-inp-actrep-nvj');
+    var r_vj = elRepVj ? parseInt(elRepVj.value) || 0 : 0;
+    var r_nvj = elRepNvj ? parseInt(elRepNvj.value) || 0 : 0;
+
     if (checkbox.checked) {
         inputs.forEach(inp => { inp.disabled = true; inp.classList.add('bg-slate-200', 'dark:bg-slate-700', 'text-slate-400', 'dark:text-slate-500', 'border-slate-200', 'dark:border-slate-600'); });
         if (bData) {
             var d = bData.doors.find(x => x.dbId === rIdx);
-            if (d) { d.isVerified = true; window.syncQCStateBatch(blockId, null, [d]); }
+            if (d) { 
+                d.isVerified = true; 
+                d.dvj = d_vj; d.evj = e_vj; d.dnvj = d_nvj; d.envj = e_nvj; d.repVj = r_vj; d.repNvj = r_nvj;
+                window.syncQCStateBatch(blockId, null, [d]); 
+            }
         }
     } else {
         inputs.forEach(inp => { inp.disabled = false; inp.classList.remove('bg-slate-200', 'dark:bg-slate-700', 'text-slate-400', 'dark:text-slate-500', 'border-slate-200', 'dark:border-slate-600'); });
         if (bData) {
             var d = bData.doors.find(x => x.dbId === rIdx);
-            if (d) { d.isVerified = false; window.syncQCStateBatch(blockId, null, [d]); }
+            if (d) { 
+                d.isVerified = false; 
+                d.dvj = d_vj; d.evj = e_vj; d.dnvj = d_nvj; d.envj = e_nvj; d.repVj = r_vj; d.repNvj = r_nvj;
+                window.syncQCStateBatch(blockId, null, [d]); 
+            }
         }
         window.unverifyBlock(blockId, true);
     }
