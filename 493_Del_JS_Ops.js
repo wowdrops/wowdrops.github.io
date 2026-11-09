@@ -32,12 +32,14 @@
                 if (json.success) {
                     return json.data.url;
                 } else {
-                    alert("ImgBB Rejected Photo: " + (json.error ? json.error.message : "Unknown Error"));
-                    throw new Error("ImgBB Upload Failed");
+                    return "";
+                    //alert("ImgBB Rejected Photo: " + (json.error ? json.error.message : "Unknown Error"));
+                    //throw new Error("ImgBB Upload Failed");
                 }
             } catch (e) {
-                console.error("Image upload network failure:", e);
-                throw e; // Throw so syncData aborts!
+                return "";
+                //console.error("Image upload network failure:", e);
+                //throw e; // Throw so syncData aborts!
             }
         };
 
