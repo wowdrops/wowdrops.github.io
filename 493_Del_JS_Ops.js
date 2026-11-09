@@ -95,7 +95,7 @@
 
                 // 1. Process Unloads (Van to Block)
                 for (let i = 0; i < u.length; i++) {
-                    let photoUrl = await window.uploadImageToCloud(u[i].photoBase64);
+                    let photoUrl ="";// await window.uploadImageToCloud(u[i].photoBase64);
                     await supa.from('deliveries').update({
                         van_to_block_link: photoUrl,
                         van_to_block_full_can_count: u[i].fullCount,
@@ -106,7 +106,7 @@
 
                 // 2. Process Loads (Block to Van)
                 for (let i = 0; i < l.length; i++) {
-                    let photoUrl = await window.uploadImageToCloud(l[i].photoBase64);
+                    let photoUrl = "";//await window.uploadImageToCloud(l[i].photoBase64);
                     await supa.from('deliveries').update({
                         block_to_van_link: photoUrl,
                         block_to_van_full_count: l[i].fullCount,
@@ -120,7 +120,7 @@
                 for (let i = 0; i < d.length; i++) {
                     let photoUrl = "";
                     if (d[i].photoBase64 && d[i].photoBase64.length > 10) {
-                        photoUrl = await window.uploadImageToCloud(d[i].photoBase64);
+                        photoUrl = ""//;await window.uploadImageToCloud(d[i].photoBase64);
                     }
                     
                     await supa.from('deliveries').update({
