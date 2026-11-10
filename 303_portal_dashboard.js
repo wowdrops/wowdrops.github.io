@@ -596,11 +596,31 @@ async function processOrderSubmission() {
       created_by: activeUserSession.cpn
     };
 
-    // Always ensure a unique_no exists in the payload for inserts
-    if (!activeUserSession.uniqueNo) {
-      activeUserSession.uniqueNo = "ORD-" + activeUserSession.cpn + "-" + Date.now().toString().slice(-6);
+    // Generate a fresh, collision-proof ID exactly at the time of checkout.
+    // Date.now().toString(36) converts 1731251345123 into a short, highly unique alphanumeric string (e.g. m3k9z8x)
+    // Create a new Date object
+    let now = new Date();
+    
+    // Extract parts and pad with leading zeroes (e.g., '0' -> '09')
+    let yyyy = now.getFullYear();
+    let mm = String(now.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+    let dd = String(now.getDate()).padStart(2, '0');
+    let hh = String(now.getHours()).padStart(2, '0');
+    let min = String(now.getMinutes()).padStart(2, '0');
+    let ss = String(now.getSeconds()).padStart(2, '0');
+    let ms = String(now.getMilliseconds()).padStart(3, '0'); // Milliseconds prevent double-click collisions
+
+    // Result: ORD-CPN0282-20261110205845123 (Year-Month-Day-Hour-Min-Sec-Ms)
+    let freshOrderId = "ORD-" + activeUserSession.cpn + "-" + yyyy + mm + dd + hh + min + ss + ms;
+    
+    // Only use the existing ID if they are modifying an active order from today.
+    // Otherwise, use the fresh ID to prevent duplicate key errors in the database.
+    if (activeUserSession.hasExistingOrder && activeUserSession.uniqueNo) {
+      payload.unique_no = activeUserSession.uniqueNo;
+    } else {
+      payload.unique_no = freshOrderId;
+      activeUserSession.uniqueNo = freshOrderId; // Update the session with the new ID
     }
-    payload.unique_no = activeUserSession.uniqueNo;
 
     // UPSERT: Automatically inserts if cpn_no is new, or updates if cpn_no already exists
     const { error } = await supabase1

@@ -511,7 +511,16 @@ window.submitOrd2Order = async function () {
       }
     } else {
       //insert
-      const uniqueID = "ORD-A-" + cleanCpn + "-" + Date.now().toString().slice(-6);
+      let now = new Date();
+      let yyyy = now.getFullYear();
+      let mm = String(now.getMonth() + 1).padStart(2, '0');
+      let dd = String(now.getDate()).padStart(2, '0');
+      let hh = String(now.getHours()).padStart(2, '0');
+      let min = String(now.getMinutes()).padStart(2, '0');
+      let ss = String(now.getSeconds()).padStart(2, '0');
+      let ms = String(now.getMilliseconds()).padStart(3, '0');
+      
+      const uniqueID = "ORD-A-" + cleanCpn + "-" + yyyy + mm + dd + hh + min + ss + ms;
       payload = {
         cpn_no: cleanCpn,
         apartment: ord2CachedProfile.apt,

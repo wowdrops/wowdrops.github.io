@@ -390,9 +390,24 @@ window.executeTransferToSales = async function () {
                         if (d.delComment && d.delComment.includes("[DEFERRED")) {
                             pushReason = d.delComment.replace("[DEFERRED", "[AUTO-DEFERRED");
                         }
+                        
+                        // Generate full Timestamp: YYYYMMDDHHMMSSms
+                        var now = new Date();
+                        var yyyy = now.getFullYear();
+                        var mm = String(now.getMonth() + 1).padStart(2, '0');
+                        var dd = String(now.getDate()).padStart(2, '0');
+                        var hh = String(now.getHours()).padStart(2, '0');
+                        var min = String(now.getMinutes()).padStart(2, '0');
+                        var ss = String(now.getSeconds()).padStart(2, '0');
+                        var ms = String(now.getMilliseconds()).padStart(3, '0');
+                        var fullTimeSuffix = yyyy + mm + dd + hh + min + ss + ms;
+                        
+                        // Simply append the new timestamp with a hyphen
+                        // e.g. ORD-CPN0282-20261110205845123-20261111093045123
+                        var rollUniqueNo = d.uniqueNo + "-" + fullTimeSuffix;
 
                         rolloverOrdersBatch.push({
-                            unique_no: d.uniqueNo + ((actD > 0 || actE > 0) ? "-P1" : "-R1"),
+                            unique_no: rollUniqueNo,
                             cpn_no: d.cpn, apartment: bData.apartment, block: bData.blockName, door: d.doorNo,
                             order_date: d.order_date, ord_d: diffD, ord_e: diffE, rate: d.rate, amount: diffD * d.rate,
                             order_comment: pushReason, status: "PENDING", pending_qty: diffD,
