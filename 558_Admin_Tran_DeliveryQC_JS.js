@@ -68,7 +68,10 @@ window.toggleQCHeader = function () {
 
 window.parseImgUrl = function (url) {
     if (!url || String(url).trim() === "") return 'https://via.placeholder.com/100?text=No+Photo';
-    if (url.includes('imgbb.com') || url.includes('ibb.co')) return url;
+    if (String(url).startsWith('data:image')) return url;
+    if (String(url).includes('supabase.co')) return url; // FIX: Protect Supabase URLs
+    if (String(url).includes('via.placeholder.com')) return url; // FIX: Protect Error Images
+    if (String(url).includes('imgbb.com') || String(url).includes('ibb.co')) return url;
     var match = String(url).match(/[-\w]{25,}/);
     return match ? 'https://lh3.googleusercontent.com/d/' + match[0] : url;
 };
