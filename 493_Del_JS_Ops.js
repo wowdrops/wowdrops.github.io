@@ -7,39 +7,53 @@
         
         window.compressImage = function (file) { return new Promise(function (resolve, reject) { if (!file) { resolve(null); return; } var locationText = "GPS: Fetching..."; var processImage = function () { var reader = new FileReader(); reader.readAsDataURL(file); reader.onload = function (e) { var img = new Image(); img.src = e.target.result; img.onload = function () { var canvas = document.createElement('canvas'); canvas.width = 800; canvas.height = img.height * (800 / img.width); var ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); var now = new Date(); var timeString = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) + " | " + now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); var watermark1 = "Date: " + timeString; var watermark2 = locationText; ctx.fillStyle = "rgba(0, 0, 0, 0.65)"; ctx.fillRect(0, canvas.height - 75, canvas.width, 75); ctx.font = "bold 20px sans-serif"; ctx.fillStyle = "#ffffff"; ctx.shadowColor = "rgba(0, 0, 0, 0.8)"; ctx.shadowBlur = 4; ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 1; ctx.fillText(watermark1, 20, canvas.height - 45); ctx.fillText(watermark2, 20, canvas.height - 18); resolve(canvas.toDataURL('image/jpeg', 0.6)); }; }; reader.onerror = function (e) { reject(e); }; }; if (navigator.geolocation) { navigator.geolocation.getCurrentPosition(function (position) { var lat = position.coords.latitude.toFixed(6); var lng = position.coords.longitude.toFixed(6); var acc = Math.round(position.coords.accuracy); locationText = "GPS: " + lat + ", " + lng + " (±" + acc + "m)"; processImage(); }, function (error) { if (error.code === error.PERMISSION_DENIED) { locationText = "GPS: Permission Denied by User"; } else if (error.code === error.POSITION_UNAVAILABLE) { locationText = "GPS: Signal Unavailable (Indoors?)"; } else if (error.code === error.TIMEOUT) { locationText = "GPS: Request Timed Out"; } else { locationText = "GPS: Unknown Error"; } processImage(); }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }); } else { locationText = "GPS: Not Supported by Browser"; processImage(); } }); };
 
-        // --- NEW: CLOUD IMAGE UPLOAD API (ImgBB) ---
-        window.uploadImageToCloud = async function(base64Data) {
-            if (!base64Data || base64Data.length < 10) return "";
-            
-            // Safety check for API Key
-            const apiKey = window.APP_CONFIG.IMGBB_API_KEY;
-            if (!apiKey) {
-                alert("CRITICAL ERROR: ImgBB API Key is missing. Admin must configure it in the Setup table.");
-                throw new Error("Missing ImgBB API Key");
+        // ===============================================
+        // SUPABASE STORAGE ENGINE (REPLACES IMGBB)
+        // ===============================================
+        function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
+            const byteCharacters = atob(b64Data);
+            const byteArrays = [];
+            for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+                const slice = byteCharacters.slice(offset, offset + sliceSize);
+                const byteNumbers = new Array(slice.length);
+                for (let i = 0; i < slice.length; i++) {
+                    byteNumbers[i] = slice.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                byteArrays.push(byteArray);
             }
+            return new Blob(byteArrays, { type: contentType });
+        }
 
+        window.uploadImageToCloud = async function (base64Data, fileNamePrefix) {
+            if (!base64Data || base64Data.length < 10) return "";
             try {
                 let b64 = base64Data.split(',')[1] || base64Data;
-                let formData = new FormData();
-                formData.append("image", b64);
-                
-                let res = await fetch("https://api.imgbb.com/1/upload?key=" + apiKey, {
-                    method: "POST",
-                    body: formData
-                });
-                let json = await res.json();
-                
-                if (json.success) {
-                    return json.data.url;
-                } else {
-                    return "";
-                    //alert("ImgBB Rejected Photo: " + (json.error ? json.error.message : "Unknown Error"));
-                    //throw new Error("ImgBB Upload Failed");
+                let blob = b64toBlob(b64, 'image/jpeg');
+                let timestamp = new Date().getTime();
+                let fileName = (fileNamePrefix || 'img') + '_' + timestamp + '.jpg';
+
+                const { data, error } = await window.supabase1.storage
+                    .from('delivery_proofs')
+                    .upload(fileName, blob, {
+                        contentType: 'image/jpeg',
+                        upsert: false
+                    });
+
+                if (error) {
+                    console.error("Supabase Storage Upload Error:", error);
+                    return "https://via.placeholder.com/800x800.png?text=Error:+" + encodeURIComponent(error.message); 
                 }
+
+                // Generate Public URL
+                const { data: pubData } = window.supabase1.storage
+                    .from('delivery_proofs')
+                    .getPublicUrl(fileName);
+
+                return pubData.publicUrl;
             } catch (e) {
-                return "";
-                //console.error("Image upload network failure:", e);
-                //throw e; // Throw so syncData aborts!
+                console.error("Storage network failure:", e);
+                return "https://via.placeholder.com/800x800.png?text=Error:+" + encodeURIComponent(e.message); 
             }
         };
 
@@ -66,7 +80,7 @@
             }
         };
 
-        // --- 3. SUPABASE SYNC ENGINE ---
+        // --- 3. SUPABASE SEQUENTIAL SYNC ENGINE ---
         window.syncData = async function () {
             if (!navigator.onLine) { window.showToast("No Internet Connection.", false); return; }
 
@@ -80,33 +94,46 @@
                 var u = await window.getFromDB('unloads');
                 var l = await window.getFromDB('loads');
 
-                if (d.length === 0 && u.length === 0 && l.length === 0) return;
+                let totalSyncTasks = u.length + l.length + d.length;
+                if (totalSyncTasks === 0) return;
 
-                window.showLoader('Syncing to Cloud...');
                 var bBtn = document.getElementById('banner-sync-btn');
-                if (bBtn) { bBtn.innerText = 'Syncing...'; bBtn.disabled = true; }
                 var sBtn = document.getElementById('btn-sync');
-                if (sBtn) { sBtn.innerText = 'Syncing...'; sBtn.disabled = true; sBtn.style.opacity = '0.7'; }
+                if (bBtn) bBtn.disabled = true;
+                if (sBtn) { sBtn.disabled = true; sBtn.style.opacity = '0.7'; }
 
                 const supa = window.supabase1;
                 const ts = new Date().toISOString();
-                const todayStr = new Date().toISOString().split('T')[0];
+                const todayStr = ts.split('T')[0];
                 const userEmail = window.currentUser.username;
+                
+                let completedTasks = 0;
 
-                // 1. Process Unloads (Van to Block)
+                function updateSyncUI() {
+                    completedTasks++;
+                    let statusText = `Syncing: ${completedTasks} / ${totalSyncTasks}`;
+                    window.showLoader(statusText);
+                    if (bBtn) bBtn.innerText = statusText;
+                    if (sBtn) sBtn.innerText = statusText;
+                }
+
+                window.showLoader(`Starting Sync: 0 / ${totalSyncTasks}`);
+
+                // 1. Process Unloads (Van to Block) - SEQUENTIAL
                 for (let i = 0; i < u.length; i++) {
-                    let photoUrl ="";// await window.uploadImageToCloud(u[i].photoBase64);
+                    let photoUrl = await window.uploadImageToCloud(u[i].photoBase64, 'v2b_' + u[i].blk);
                     await supa.from('deliveries').update({
                         van_to_block_link: photoUrl,
                         van_to_block_full_can_count: u[i].fullCount,
                         unload_on: ts,
                         unload_by: userEmail
                     }).eq('apartment', u[i].apt).eq('block', u[i].blk);
+                    updateSyncUI();
                 }
 
-                // 2. Process Loads (Block to Van)
+                // 2. Process Loads (Block to Van) - SEQUENTIAL
                 for (let i = 0; i < l.length; i++) {
-                    let photoUrl = "";//await window.uploadImageToCloud(l[i].photoBase64);
+                    let photoUrl = await window.uploadImageToCloud(l[i].photoBase64, 'b2v_' + l[i].blk);
                     await supa.from('deliveries').update({
                         block_to_van_link: photoUrl,
                         block_to_van_full_count: l[i].fullCount,
@@ -114,13 +141,14 @@
                         load_on: ts,
                         load_by: userEmail
                     }).eq('apartment', l[i].apt).eq('block', l[i].blk);
+                    updateSyncUI();
                 }
 
-                // 3. Process Door Deliveries
+                // 3. Process Door Deliveries - SEQUENTIAL
                 for (let i = 0; i < d.length; i++) {
                     let photoUrl = "";
                     if (d[i].photoBase64 && d[i].photoBase64.length > 10) {
-                        photoUrl = ""//;await window.uploadImageToCloud(d[i].photoBase64);
+                        photoUrl = await window.uploadImageToCloud(d[i].photoBase64, 'door_' + d[i].uniqueNo);
                     }
                     
                     await supa.from('deliveries').update({
@@ -138,8 +166,9 @@
                         delivery_entered_at: ts,
                         delivery_entered_by: userEmail,
                         status: 'DELIVERED',
-                        door_qc: 'PASS' // Automatically clears QC if Driver completes it
+                        door_qc: 'PASS' 
                     }).eq('unique_no', d[i].uniqueNo);
+                    updateSyncUI();
                 }
 
                 // Clear Local DB
@@ -155,7 +184,7 @@
                     window.hideLoader();
                     window.updateSyncCount();
                     window.showToast("Synced successfully!", true);
-                    window.fetchOrdersFromServer(); // Refresh Route
+                    window.fetchOrdersFromServer(); 
                 };
 
             } catch (err) {
@@ -509,12 +538,17 @@
                 for (var i = 0; i < unloads.length; i++) { if (unloads[i].blockId === bId) savedMatch = unloads[i]; }
                 var doneInDB = window.pendingData[window.selectedApt][window.selectedBlock][0].v2bDone;
 
+                var cloudLink = window.pendingData[window.selectedApt][window.selectedBlock][0].v2bLink; // Pulls from server
+
                 if (savedMatch || doneInDB) {
                     document.getElementById('form-unload').classList.add('hidden'); document.getElementById('done-unload').classList.remove('hidden');
                     document.getElementById('badge-unload').className = "text-[10px] bg-emerald-500 px-2 py-1 rounded shadow-inner text-white font-black";
                     document.getElementById('badge-unload').innerText = doneInDB && !savedMatch ? "DB SYNCED" : "SAVED LOCAL";
 
-                    var photoHTML = savedMatch && savedMatch.photoBase64 ? '<div class="mt-4 flex justify-center"><img src="' + savedMatch.photoBase64 + '" onclick="window.openLightbox(\'' + savedMatch.photoBase64 + '\')" class="h-32 rounded-lg border border-emerald-200 shadow-sm bg-white p-1 cursor-pointer hover:scale-105 transition"></div>' : '';
+                    // Safely falls back to Cloud URL if local memory is cleared
+                    var displayUrl = (savedMatch && savedMatch.photoBase64) ? savedMatch.photoBase64 : (cloudLink ? window.parseImgUrl(cloudLink) : '');
+                    var photoHTML = displayUrl ? '<div class="mt-4 flex justify-center"><img src="' + displayUrl + '" title="' + displayUrl + '" onclick="window.openLightbox(\'' + displayUrl + '\')" class="h-32 rounded-lg border border-emerald-200 shadow-sm bg-white p-1 cursor-pointer hover:scale-105 transition"></div>' : '';
+                    
                     document.getElementById('done-unload').innerHTML = '<span class="text-4xl block mb-2">✅</span><p class="text-sm font-black text-emerald-800">Unload Saved</p>' + photoHTML + '<button onclick="window.editOperation(\'unload\')" class="text-xs font-bold text-slate-500 mt-4 hover:text-slate-700 underline transition">Edit Entry</button>';
                 } else {
                     document.getElementById('form-unload').classList.remove('hidden'); document.getElementById('done-unload').classList.add('hidden');
@@ -613,13 +647,17 @@
                 var bId = window.selectedApt + '_' + window.selectedBlock; var savedMatch = null;
                 for (var i = 0; i < loads.length; i++) { if (loads[i].blockId === bId) savedMatch = loads[i]; }
                 var doneInDB = window.pendingData[window.selectedApt][window.selectedBlock][0].b2vDone;
+                var cloudLink = window.pendingData[window.selectedApt][window.selectedBlock][0].b2vLink; // Pulls from server
 
                 if (savedMatch || doneInDB) {
                     document.getElementById('form-load').classList.add('hidden'); document.getElementById('done-load').classList.remove('hidden');
                     document.getElementById('badge-load').className = "text-[10px] bg-emerald-500 px-2 py-1 rounded shadow-inner text-white font-black";
                     document.getElementById('badge-load').innerText = doneInDB && !savedMatch ? "DB SYNCED" : "SAVED LOCAL";
 
-                    var photoHTML = savedMatch && savedMatch.photoBase64 ? '<div class="mt-4 flex justify-center"><img src="' + savedMatch.photoBase64 + '" onclick="window.openLightbox(\'' + savedMatch.photoBase64 + '\')" class="h-32 rounded-lg border border-emerald-200 shadow-sm bg-white p-1 cursor-pointer hover:scale-105 transition"></div>' : '';
+                    // Safely falls back to Cloud URL if local memory is cleared
+                    var displayUrl = (savedMatch && savedMatch.photoBase64) ? savedMatch.photoBase64 : (cloudLink ? window.parseImgUrl(cloudLink) : '');
+                    var photoHTML = displayUrl ? '<div class="mt-4 flex justify-center"><img src="' + displayUrl + '" title="' + displayUrl + '" onclick="window.openLightbox(\'' + displayUrl + '\')" class="h-32 rounded-lg border border-emerald-200 shadow-sm bg-white p-1 cursor-pointer hover:scale-105 transition"></div>' : '';
+                    
                     document.getElementById('done-load').innerHTML = '<span class="text-4xl block mb-2">✅</span><p class="text-sm font-black text-emerald-800">Load Saved</p>' + photoHTML + '<button onclick="window.editOperation(\'load\')" class="text-xs font-bold text-slate-500 mt-4 hover:text-slate-700 underline transition">Edit Entry</button>';
                 } else {
                     var doors = window.pendingData[window.selectedApt][window.selectedBlock];
@@ -906,11 +944,28 @@
             window.getFromDB('deliveries').then(function (d) {
                 window.getFromDB('unloads').then(function (u) {
                     window.getFromDB('loads').then(function (l) {
-                        var total = d.length + u.length + l.length;
-                        var syncLabel = document.getElementById('sync-count'); if (syncLabel) syncLabel.innerText = total + ' items';
-                        var btn = document.getElementById('btn-sync'); var banner = document.getElementById('sync-reminder-banner');
+                        var totalItems = d.length + u.length + l.length;
+                        
+                        // NEW: Count exact number of photos pending upload
+                        var totalPhotos = 0;
+                        var checkPhoto = function(item) { if (item.photoBase64 && item.photoBase64.length > 10) totalPhotos++; };
+                        u.forEach(checkPhoto);
+                        l.forEach(checkPhoto);
+                        d.forEach(checkPhoto);
+
+                        var syncLabel = document.getElementById('sync-count'); 
+                        if (syncLabel) {
+                            if (totalItems > 0) {
+                                syncLabel.innerHTML = totalItems + ' items <span class="text-xs text-slate-400 font-bold tracking-widest ml-1">(' + totalPhotos + ' 🖼️)</span>';
+                            } else {
+                                syncLabel.innerText = '0 items';
+                            }
+                        }
+
+                        var btn = document.getElementById('btn-sync'); 
+                        var banner = document.getElementById('sync-reminder-banner');
                         if (btn && banner) {
-                            if (total > 0) {
+                            if (totalItems > 0) {
                                 btn.classList.add('bg-emerald-600', 'text-white'); btn.classList.remove('bg-slate-100', 'text-slate-500');
                                 if (navigator.onLine) banner.classList.remove('hidden'); else banner.classList.add('hidden');
                             } else {

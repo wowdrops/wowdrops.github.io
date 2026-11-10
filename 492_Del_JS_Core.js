@@ -409,6 +409,8 @@
     window.parseImgUrl = function (url) {
         if (!url || String(url).trim() === "") return 'https://via.placeholder.com/100?text=No+Photo';
         if (String(url).startsWith('data:image')) return url;
+        if (String(url).includes('supabase.co')) return url; // FIX: Protect Supabase URLs!
+        if (String(url).includes('via.placeholder.com')) return url; // FIX: Protect Error Images!
         var match = String(url).match(/[-\w]{25,}/);
         if (match && match[0]) return 'https://lh3.googleusercontent.com/d/' + match[0];
         return url;
