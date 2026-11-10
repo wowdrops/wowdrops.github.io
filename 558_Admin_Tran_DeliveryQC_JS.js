@@ -560,7 +560,8 @@ window.executeTransferToSales = async function () {
 
         btn.innerText = "Process Selected";
         btn.disabled = false;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        window.scrollAdminTo('top');
 
         window.loadDeliveryQCData();
 
@@ -1346,16 +1347,5 @@ document.addEventListener('keydown', function (event) {
         if (ex && !ex.classList.contains('hidden')) window.closeExceptionReview();
     }
 });
-
-window.scrollAdminTo = function (pos) {
-    var topVal = (pos === 'top') ? 0 : 999999;
-    window.scrollTo({ top: topVal, behavior: 'smooth' });
-    document.documentElement.scrollTo({ top: topVal, behavior: 'smooth' });
-    document.body.scrollTo({ top: topVal, behavior: 'smooth' });
-    var scrollables = document.querySelectorAll('main, .overflow-y-auto');
-    scrollables.forEach(function (el) {
-        el.scrollTo({ top: (pos === 'top') ? 0 : el.scrollHeight, behavior: 'smooth' });
-    });
-};
 
 window.tabActions['tran-delivery'] = function (arg) { window.loadDeliveryQCData(arg); };

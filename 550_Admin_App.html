@@ -53,7 +53,23 @@
         <!-- CORE UTILITY: Pre-load the Password Screen -->
         <div data-include="590_Admin_Password.html"></div>
       </div>
-
+      <!-- GLOBAL SCROLL BUTTONS (Works on all pages) -->
+      <div class="fixed bottom-8 right-6 z-[100] flex flex-col gap-3">
+        <button onclick="window.scrollAdminTo('top')"
+          class="w-12 h-12 bg-slate-800 dark:bg-slate-700 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors opacity-80 hover:opacity-100 outline-none"
+          title="Scroll to Top">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 15l7-7 7 7"></path>
+          </svg>
+        </button>
+        <button onclick="window.scrollAdminTo('bottom')"
+          class="w-12 h-12 bg-slate-800 dark:bg-slate-700 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors opacity-80 hover:opacity-100 outline-none"
+          title="Scroll to Bottom">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+      </div>
     </main>
   </div>
 </div>
@@ -103,7 +119,7 @@
 <!-- Master Loader: Fetches ONLY the Core Shell HTML, then boots JS -->
 <script>
   // CHANGE THIS NUMBER EVERY TIME YOU DEPLOY NEW CODE TO GITHUB
-  const APP_VERSION = "?v=1794326544"; 
+  const APP_VERSION = "?v=1794328309"; 
 
   const jsFiles = [
     "supabase_config.js" + APP_VERSION,

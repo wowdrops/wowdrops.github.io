@@ -24,3 +24,11 @@ window.handleGlobalCpnSearch = function(event) {
     }
   }
 };
+
+window.scrollAdminTo = function (pos) {
+    var scrollArea = document.getElementById('scroll-area');
+    if (!scrollArea) return;
+    
+    var topVal = (pos === 'top') ? 0 : scrollArea.scrollHeight;
+    scrollArea.scrollTo({ top: topVal, behavior: 'smooth' });
+};

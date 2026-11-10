@@ -253,14 +253,16 @@ window.loadCRMReportData = function (categoryType) {
     
     setTimeout(function() {
         var repDiv = document.getElementById('crm-detailed-report');
-        if(typeof window.scrollAdminTo === 'function') {
+        if (repDiv) {
+            // Use the native browser scrolling to bring this specific div into view
             repDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            repDiv.classList.add('ring-4', 'ring-indigo-400', 'dark:ring-indigo-600', 'ring-offset-4', 'dark:ring-offset-slate-900');
+            
+            setTimeout(function() {
+                repDiv.classList.remove('ring-4', 'ring-indigo-400', 'dark:ring-indigo-600', 'ring-offset-4', 'dark:ring-offset-slate-900');
+            }, 800);
         }
-        repDiv.classList.add('ring-4', 'ring-indigo-400', 'dark:ring-indigo-600', 'ring-offset-4', 'dark:ring-offset-slate-900', 'transition-all', 'duration-500');
-        
-        setTimeout(function() {
-            repDiv.classList.remove('ring-4', 'ring-indigo-400', 'dark:ring-indigo-600', 'ring-offset-4', 'dark:ring-offset-slate-900');
-        }, 800);
     }, 50);
 };
 
