@@ -52,7 +52,7 @@ window.loadSystemSetupConfig = async function() {
         // Expiry & API
         window.adminOtpExpiryMins = Number(config['admin_otp_expiry_minutes']) || 10;
         window.adminEodPinExpiryMins = Number(config['admin_eod_pin_expiry_minutes']) || 60;
-        if (config['admin_imgbb_api_key']) window.IMGBB_API_KEY = config['admin_imgbb_api_key'];
+        
         if (config['admin_gas_webhook_url']) window.GAS_WEBHOOK_URL = config['admin_gas_webhook_url'];
         
         // Notification Alignment

@@ -579,7 +579,7 @@ window.executeTransferToSales = async function () {
     }
 };
 
-// --- IMGBB UPLOAD FOR ADMIN OVERRIDE ---
+// --- ADMIN OVERRIDE/IMAGE COMPRESSION ---
 window.compressAdminImage = function (file) {
     return new Promise((resolve, reject) => {
         var reader = new FileReader();
@@ -607,7 +607,19 @@ window.compressAdminImage = function (file) {
     });
 };
 
-// --- SPA BULLETPROOF FILE UPLOAD FUNCTION ---
+// --- SUPABASE STORAGE OVERRIDE UPLOAD ---
+window.b64toBlob = function(b64Data, contentType = '', sliceSize = 512) {
+    const byteCharacters = atob(b64Data);
+    const byteArrays = [];
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+        const slice = byteCharacters.slice(offset, offset + sliceSize);
+        const byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) byteNumbers[i] = slice.charCodeAt(i);
+        byteArrays.push(new Uint8Array(byteNumbers));
+    }
+    return new Blob(byteArrays, { type: contentType });
+};
+
 window.handleAdminQCUpload = async function (e) {
     if (!e.target.files || e.target.files.length === 0 || !window.activeUploadContext) return;
     var file = e.target.files[0];
@@ -616,27 +628,32 @@ window.handleAdminQCUpload = async function (e) {
 
     try {
         var b64String = await window.compressAdminImage(file);
-        document.getElementById('admin-qc-upload-text').innerText = "Uploading to ImgBB...";
+        document.getElementById('admin-qc-upload-text').innerText = "Uploading to Cloud Storage...";
         
-        const { data: setupData, error: setupErr } = await window.supabase1
-            .from('setup').select('value').eq('key', 'IMGBB_API_KEY').single();
-            
-        if (setupErr || !setupData || !setupData.value) throw new Error("Missing ImgBB API Key in Setup Table.");
-        
-        let formData = new FormData();
-        formData.append("image", b64String.split(',')[1]);
+        // Convert to Blob for Supabase
+        let b64 = b64String.split(',')[1] || b64String;
+        let blob = window.b64toBlob(b64, 'image/jpeg');
+        let timestamp = new Date().getTime();
+        let fileNamePrefix = payload.type === 'door' ? 'door_override' : (payload.type === 'v2b' ? 'v2b_override' : 'b2v_override');
+        let fileName = fileNamePrefix + '_' + payload.blockId + '_' + timestamp + '.jpg';
 
-        let res = await fetch("https://api.imgbb.com/1/upload?key=" + setupData.value.trim(), { method: "POST", body: formData });
-        let json = await res.json();
-        if (!json.success) throw new Error("ImgBB Upload Failed.");
-        var finalUrl = json.data.url;
+        // Upload to Supabase Storage
+        const { data: uploadData, error: uploadErr } = await window.supabase1.storage
+            .from('delivery_proofs')
+            .upload(fileName, blob, { contentType: 'image/jpeg', upsert: false });
+
+        if (uploadErr) throw new Error("Cloud Upload Failed: " + uploadErr.message);
+
+        // Fetch Public URL
+        const { data: pubData } = window.supabase1.storage.from('delivery_proofs').getPublicUrl(fileName);
+        var finalUrl = pubData.publicUrl;
 
         var updatePayload = {};
         if (payload.type === 'v2b') updatePayload.van_to_block_link = finalUrl;
         else if (payload.type === 'b2v') updatePayload.block_to_van_link = finalUrl;
         else updatePayload.door_delivery_link = finalUrl;
 
-        // BUG FIX 1: Use unique_no string instead of integer ID
+        // Apply to database
         var query = window.supabase1.from('deliveries').update(updatePayload);
         if (payload.type === 'door') query = query.eq('unique_no', payload.doorUniqueNo);
         else query = query.eq('apartment', payload.apt).eq('block', payload.blk);
@@ -644,6 +661,7 @@ window.handleAdminQCUpload = async function (e) {
         const { error: dbErr } = await query;
         if (dbErr) throw dbErr;
 
+        // Update UI
         var imgEl = document.getElementById(payload.imgId);
         imgEl.src = finalUrl;
         imgEl.setAttribute('onclick', 'window.openLightbox("' + finalUrl + '")');

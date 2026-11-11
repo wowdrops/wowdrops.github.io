@@ -8,7 +8,7 @@
         window.compressImage = function (file) { return new Promise(function (resolve, reject) { if (!file) { resolve(null); return; } var locationText = "GPS: Fetching..."; var processImage = function () { var reader = new FileReader(); reader.readAsDataURL(file); reader.onload = function (e) { var img = new Image(); img.src = e.target.result; img.onload = function () { var canvas = document.createElement('canvas'); canvas.width = 800; canvas.height = img.height * (800 / img.width); var ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); var now = new Date(); var timeString = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) + " | " + now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); var watermark1 = "Date: " + timeString; var watermark2 = locationText; ctx.fillStyle = "rgba(0, 0, 0, 0.65)"; ctx.fillRect(0, canvas.height - 75, canvas.width, 75); ctx.font = "bold 20px sans-serif"; ctx.fillStyle = "#ffffff"; ctx.shadowColor = "rgba(0, 0, 0, 0.8)"; ctx.shadowBlur = 4; ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 1; ctx.fillText(watermark1, 20, canvas.height - 45); ctx.fillText(watermark2, 20, canvas.height - 18); resolve(canvas.toDataURL('image/jpeg', 0.6)); }; }; reader.onerror = function (e) { reject(e); }; }; if (navigator.geolocation) { navigator.geolocation.getCurrentPosition(function (position) { var lat = position.coords.latitude.toFixed(6); var lng = position.coords.longitude.toFixed(6); var acc = Math.round(position.coords.accuracy); locationText = "GPS: " + lat + ", " + lng + " (±" + acc + "m)"; processImage(); }, function (error) { if (error.code === error.PERMISSION_DENIED) { locationText = "GPS: Permission Denied by User"; } else if (error.code === error.POSITION_UNAVAILABLE) { locationText = "GPS: Signal Unavailable (Indoors?)"; } else if (error.code === error.TIMEOUT) { locationText = "GPS: Request Timed Out"; } else { locationText = "GPS: Unknown Error"; } processImage(); }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }); } else { locationText = "GPS: Not Supported by Browser"; processImage(); } }); };
 
         // ===============================================
-        // SUPABASE STORAGE ENGINE (REPLACES IMGBB)
+        // SUPABASE STORAGE ENGINE
         // ===============================================
         function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
             const byteCharacters = atob(b64Data);
@@ -67,7 +67,6 @@
                 try { 
                     const cfg = JSON.parse(cData);
                     window.APP_CONFIG.VJ_PRICE = cfg.vjPrice || 100; 
-                    window.APP_CONFIG.IMGBB_API_KEY = cfg.imgbbKey || null;
                 } catch (e) { } 
             }
 

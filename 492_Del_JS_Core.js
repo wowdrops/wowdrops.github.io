@@ -584,22 +584,16 @@
             }
 
             // --- FIX: FETCH SYSTEM CONFIG VARIABLES ---
-            const { data: setupData } = await supa.from('setup').select('key, value').in('key', ['VJ_PRICE', 'IMGBB_API_KEY']);
+            const { data: setupData } = await supa.from('setup').select('key, value').in('key', ['VJ_PRICE']);
             
             let vjPrice = window.APP_CONFIG.VJ_PRICE;
-            let imgbbKey = null;
-
-            if (setupData) {
-                const vjRow = setupData.find(r => r.key === 'VJ_PRICE');
-                if (vjRow && vjRow.value) vjPrice = Number(vjRow.value);
-
-                const imgRow = setupData.find(r => r.key === 'IMGBB_API_KEY');
-                if (imgRow && imgRow.value) imgbbKey = String(imgRow.value).trim();
+            
+            if (setupData && setupData.length > 0) {
+                vjPrice = Number(setupData[0].value) || vjPrice;
             }
 
             window.APP_CONFIG.VJ_PRICE = vjPrice;
-            window.APP_CONFIG.IMGBB_API_KEY = imgbbKey; // Store it securely in memory
-            localStorage.setItem('wd_sys_config', JSON.stringify({ vjPrice: vjPrice, imgbbKey: imgbbKey }));
+            localStorage.setItem('wd_sys_config', JSON.stringify({ vjPrice: vjPrice }));
             // ---------------------------------------------------------
 
             // 2. WE HAVE A ROUTE! Now handle the EOD Trip & Shift logic.
@@ -626,14 +620,29 @@
                 let activeTripId = null;
                 const { data: todayTrips } = await supa
                     .from('eod_log')
-                    .select('id')
+                    .select('id, status')
                     .gte('created_at', todayStr + 'T00:00:00')
-                    .in('status', ['Active', 'Pending Handover'])
-                    .order('created_at', { ascending: true })
+                    // NEW: Fetch ALL trips for today, including completed ones
+                    .order('created_at', { ascending: false })
                     .limit(1);
 
+                // NEW STRICT LOGIC
                 if (todayTrips && todayTrips.length > 0) {
-                    activeTripId = todayTrips[0].id;
+                    let latestTrip = todayTrips[0];
+                    if (latestTrip.status === 'Completed' || latestTrip.status === 'Completed (Shortage)') {
+                        // Check if deliveries are still sitting in the QC queue
+                        const { count: pendingDelCount } = await supa.from('deliveries')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('trip_id', latestTrip.id);
+                            
+                        if (pendingDelCount > 0) {
+                            window.hideLoader();
+                            document.getElementById('main-header').classList.add('hidden');
+                            alert("🛑 ROUTE BLOCKED\n\nYour previous trip is completed but is waiting for Admin QC processing. You cannot start a new trip until the admin moves these to sales.");
+                            return;
+                        }
+                    }
+                    activeTripId = latestTrip.id;
                 } else {
                     let routeDispatchVj = 0;
                     let routeDispatchNvj = 0;

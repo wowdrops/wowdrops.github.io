@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-import-prefix
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1"
 import { initializeApp, cert, getApps } from "npm:firebase-admin@11.11.0/app"
@@ -14,7 +15,7 @@ if (serviceAccountStr && getApps().length === 0) {
   try {
     const serviceAccount = JSON.parse(serviceAccountStr)
     initializeApp({ credential: cert(serviceAccount) })
-  } catch (error) {
+  } catch (_error) {
     console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT JSON")
   }
 }
@@ -85,7 +86,7 @@ serve(async (req) => {
       
       let finalStatus = 'SUCCESS'
       let finalCost = 0.00
-      let errors: string[] = []
+      const errors: string[] = []
       let push_delivered = false 
 
       let phoneNum = null;
@@ -136,8 +137,11 @@ serve(async (req) => {
                   await getMessaging().send(fcmMessage)
                   finalCost += 0.00 
                   push_delivered = true 
-                } catch (fcmError: any) {
-                  const errorCode = fcmError.code || fcmError.errorInfo?.code
+                } catch (fcmError: unknown) {
+                  // Type assertion to safely check Firebase's specific error structure
+                  // deno-lint-ignore no-explicit-any
+                  const fbErr = fcmError as Record<string, any>;
+                  const errorCode = fbErr.code || fbErr.errorInfo?.code;
                   
                   if (errorCode === 'messaging/registration-token-not-registered' || 
                       errorCode === 'messaging/invalid-registration-token' || 
@@ -154,7 +158,7 @@ serve(async (req) => {
                       }
                     }
                   } else {
-                    errors.push(`Push Error (Device ${deviceId}): ${fcmError.message}`)
+                    errors.push(`Push Error (Device ${deviceId}): ${errorCode || 'Unknown error'}`)
                   }
                 }
               }
@@ -166,8 +170,9 @@ serve(async (req) => {
           } else {
             errors.push(`Push Skipped: Customer has no registered device tokens.`)
           }
-        } catch (err: any) {
-          errors.push(`Push System Failure: ${err.message}`)
+        } catch (err: unknown) {
+          const errorMsg = err instanceof Error ? err.message : String(err);
+          errors.push(`Push System Failure: ${errorMsg}`);
         }
       }
 
@@ -182,6 +187,7 @@ serve(async (req) => {
           const waPhoneId = Deno.env.get('META_PHONE_ID')
 
           // FIXED LOGIC: Only attach components if variables exist, avoiding Meta strict crashes
+          // deno-lint-ignore no-explicit-any
           const templatePayload: any = {
             messaging_product: "whatsapp",
             to: `91${phoneNum.slice(-10)}`,
@@ -192,7 +198,7 @@ serve(async (req) => {
           if (raw_payload.wa_variables && raw_payload.wa_variables.length > 0) {
             templatePayload.template.components = [{
               type: "body",
-              parameters: raw_payload.wa_variables.map((val: any) => ({ type: "text", text: String(val) }))
+              parameters: raw_payload.wa_variables.map((val: unknown) => ({ type: "text", text: String(val) }))
             }]
           }
 
@@ -206,8 +212,9 @@ serve(async (req) => {
             const waData = await waRes.json()
             if (waData.error) errors.push(`WhatsApp Error: ${waData.error.message}`)
             else finalCost += 0.88
-          } catch (err: any) {
-            errors.push(`WhatsApp Network Failure: ${err.message}`)
+          } catch (err: unknown) {
+            const errorMsg = err instanceof Error ? err.message : String(err);
+            errors.push(`WhatsApp Network Failure: ${errorMsg}`);
           }
         }
       } else if (target_channels.includes('WHATSAPP') && !phoneNum) {
@@ -243,8 +250,12 @@ serve(async (req) => {
             if (!emailData.success) {
               errors.push(`Gmail Delivery Failed via GAS.`)
             }
-          } catch (err: any) {
-            errors.push(`Gmail Network Error: ${err.message}`)
+          } catch (err: unknown) {
+              if (err instanceof Error) {
+                  errors.push(`Gmail Network Error: ${err.message}`);
+              } else {
+                  errors.push(`Gmail Network Error: An unknown error occurred.`);
+              }
           }
         }
       } else if (target_channels.includes('GMAIL') && !emailAddress) {
@@ -273,10 +284,11 @@ serve(async (req) => {
       status: 200,
     })
 
-  } catch (error: any) {
-    return new Response(JSON.stringify({ success: false, error: error.message }), {
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    return new Response(JSON.stringify({ success: false, error: errorMsg }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400, // Or 500
-    })
+      status: 400,
+    });
   }
 })
