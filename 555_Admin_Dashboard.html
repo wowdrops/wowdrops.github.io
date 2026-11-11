@@ -139,13 +139,16 @@
         </div>
       </div>
 
-      <div class="bg-white dark:bg-slate-800 p-5 md:p-8 rounded-2xl md:rounded-3xl border-2 md:border-4 border-emerald-100 dark:border-emerald-900/30 shadow-sm border-b-4 md:border-b-8 border-b-emerald-500 flex flex-col justify-center text-center transition-colors">
-        <span class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Allocations (Latest)</span>
-        <h3 id="dash-clean-pay" class="text-3xl md:text-5xl font-black text-slate-800 dark:text-white mt-3 mb-5 transition-colors">₹0</h3>
-        <div class="grid grid-cols-3 gap-1 md:gap-2 border-t-2 md:border-t-4 border-emerald-50 dark:border-emerald-900/20 pt-4 mt-auto transition-colors">
-           <div class="text-center"><p class="text-[9px] md:text-xs font-bold text-slate-400 uppercase">Current</p><p id="dash-pay-curr" class="text-base md:text-xl font-black text-emerald-600">₹0</p></div>
-           <div class="text-center border-l border-slate-100 dark:border-slate-700/50"><p class="text-[9px] md:text-xs font-bold text-slate-400 uppercase">Previous</p><p id="dash-pay-prev" class="text-base md:text-xl font-black text-emerald-600">₹0</p></div>
-           <div class="text-center border-l border-slate-100 dark:border-slate-700/50"><p class="text-[9px] md:text-xs font-bold text-slate-400 uppercase">Older</p><p id="dash-pay-older" class="text-base md:text-xl font-black text-emerald-600">₹0</p></div>
+      <div class="bg-white p-8 rounded-3xl border-4 border-emerald-100 shadow-sm border-b-8 border-b-emerald-500 flex flex-col justify-center text-center">
+        <span class="text-lg md:text-xl font-bold uppercase tracking-wider text-slate-400">Payment Allocations (Latest)</span>
+        <h3 id="dash-clean-pay" class="text-5xl md:text-6xl font-black text-slate-800 mt-6 mb-8">₹0</h3>
+        
+        <!-- Changed grid-cols-3 to grid-cols-4 and added the Advance block -->
+        <div class="grid grid-cols-4 gap-2 border-t-4 border-emerald-50 pt-6 mt-auto">
+           <div class="text-center"><p class="text-xs font-bold text-slate-400 uppercase">Current</p><p id="dash-pay-curr" class="text-xl md:text-2xl font-black text-emerald-600">₹0</p></div>
+           <div class="text-center border-l-2 border-slate-100"><p class="text-xs font-bold text-slate-400 uppercase">Previous</p><p id="dash-pay-prev" class="text-xl md:text-2xl font-black text-emerald-600">₹0</p></div>
+           <div class="text-center border-l-2 border-slate-100"><p class="text-xs font-bold text-slate-400 uppercase">Older</p><p id="dash-pay-older" class="text-xl md:text-2xl font-black text-emerald-600">₹0</p></div>
+           <div class="text-center border-l-2 border-slate-100"><p class="text-xs font-bold text-indigo-400 uppercase">Advance</p><p id="dash-pay-adv" class="text-xl md:text-2xl font-black text-indigo-600">₹0</p></div>
         </div>
       </div>
 
